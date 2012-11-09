@@ -5,7 +5,7 @@ var express = require('express');
 var app = express.createServer(express.logger());
 
 app.get('/', function(request, response) {
-	response.send('We will be back soon! [' + env + ']');
+	response.send('Please pardon the dust. We will be back soon for SantaHack 2012!');
 });
 
 var port = process.env.PORT || 5000;
