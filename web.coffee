@@ -6,7 +6,7 @@ lib =
 	moment: require 'moment'
 	querystring: require 'querystring'
 #	connect: require 'connect'
-	http: require 'http'
+	https: require 'https'
 	xml2js: require 'xml2js'
 
 db = if process.env.MONGOHQ_URL then new lib.mongolian process.env.MONGOHQ_URL else new lib.mongolian().db 'test'
@@ -46,6 +46,11 @@ app.use (req, res, next) ->
 			return false
 	next()
 
+app.use (req, res, next) ->
+	res.locals.session = req.session
+	res.locals.returnURL = req.path
+	next()
+
 app.use app.router
 
 if app.settings.env = 'development'
@@ -63,6 +68,7 @@ app.locals.markdown = lib.marked
 
 app.locals.friendlyDate = (date) -> lib.moment(date).fromNow()
 app.locals.utcDate = (date) -> lib.moment(date).utc().format 'dddd, MMMM Do YYYY, h:mm:ss a [UTC]'
+app.locals.displayTime = () -> lib.moment().utc().format 'MMM D[,] YYYY, h:mm a [UTC]'
 
 app.get '/', (req, res) ->
 	res.redirect '/home'
@@ -90,26 +96,41 @@ app.get /^\/(?:\d{4}\/)?rules$/, (req, res) ->
 app.get '/login', (req, res) ->
 	returnUrl = req.param 'return'
 	accReturn = "http://#{req.host}/login-return"
-	accReturn += "$return=#{returnURL}" if returnUrl?
+	accReturn += "$return=#{returnUrl}" if returnUrl?
 	res.redirect "http://www.allegro.cc/account/login/#{accReturn}"
 
+app.get '/logout', (req, res) ->
+	req.session.user = undefined
+	res.redirect (req.param 'return') ? '/'
+
 app.get '/login-return', (req, res) ->
+	# add error handling on all paths out
 	loginToken = req.param 'token'
-	returnURL = req.param 'return'
-	req.session.isLoggedIn = false
+	req.session.user = undefined
 	
 	if loginToken?
-		http.get "http://www.allegro.cc/accoun/authenticate-token/#{loginToken}", (res) ->
+		lib.https.get "https://www.allegro.cc/account/authenticate-token/#{loginToken}", (response) ->
 			resBody = ''
 			
-			res.on 'data', (chunk) ->
+			response.on 'data', (chunk) ->
 				resBody += chunk
 			
-			res.on 'end', () ->
+			response.on 'end', () ->
 				parser = new lib.xml2js.Parser()
 				parser.addListener 'end', (loginInfo) ->
-					console.dir loginInfo
-					res.send loginInfo
+					if loginInfo.response.$.valid == 'true'
+						user =
+							id: loginInfo.response.member[0].$.id
+							name: loginInfo.response.member[0].name[0]
+							avatar: loginInfo.response.member[0].avatar[0]._
+							picture: loginInfo.response.member[0].picture[0]._
+						
+						db.collection('users').update { id: user.id }, user, true, false
+						
+						req.session.user = user
+						
+						res.redirect (req.param 'return') ? '/'
+						
 				parser.parseString resBody
 
 app.listen process.env.PORT

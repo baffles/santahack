@@ -16,14 +16,19 @@ html
 					li: a(href=genLink('/home')) Home
 					li: a(href=genLink('/rules')) Rules
 			#user
-				// if logged in
-				// <img src="{{ app.session.get('avatar') }}" id="avatar" /><span id="usertext">{{ app.session.get('name') }}</span><span id="useraction">[<a href="{{ path('logout', { 'return': app.request.getRequestUri() }) }}">Log Out</a>]</span>
-				// else
-				span#useraction
-					[
-					a(href='/login?returnpage') Log In
-					]
-			#time(title='Official SantaHack time (when the page was loaded)') Nov 10, 2012 3:57 AM UTC
+				if session.user
+					img#avatar(src='http://static.allegro.cc/image/avatar/' + session.user.avatar)
+					span#usertext= session.user.name
+					span#useraction
+						[
+						a(href='/logout?return=' + returnURL) Log Out
+						]
+				else
+					span#useraction
+						[
+						a(href='/login?return=' + returnURL) Log In
+						]
+			#time(title='Official SantaHack time (when the page was loaded)')= displayTime()
 			#content
 				block content
 		#footer Copyright &copy; <a href="http://www.baf.cc/">Robert Ferris</a>, 2011-2012<br />Design by Mark Oates via <a href="http://zeoxdesign.com/">Zeox Design</a>
