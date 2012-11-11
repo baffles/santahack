@@ -68,30 +68,14 @@ app.locals.markdown = lib.marked
 
 app.locals.friendlyDate = (date) -> lib.moment(date).fromNow()
 app.locals.utcDate = (date) -> lib.moment(date).utc().format 'dddd, MMMM Do YYYY, h:mm:ss a [UTC]'
-app.locals.displayTime = () -> lib.moment().utc().format 'MMM D[,] YYYY, h:mm a [UTC]'
+app.locals.displayTime = () -> lib.moment().utc().format 'MMM D[,] YYYY, h:mm A [UTC]'
 
-app.get '/', (req, res) ->
-	res.redirect '/home'
-
-app.get /^\/(?:\d{4}\/)?testyr$/, (req, res) ->
-	if not req.needsYearRedirect()
-		res.send "Got year #{req.year}!"
-
-app.get /^\/(?:\d{4}\/)?home$/, (req, res) ->
-	if not req.needsYearRedirect()
-		db.collection('news').find({ year: req.year }).sort({ date: -1}).limit(5).toArray (err, news) ->
-			throw err if err
-			res.render 'home',
-				title: 'SantaHack'
-				posts: news
-
-app.get /^\/(?:\d{4}\/)?rules$/, (req, res) ->
-	if not req.needsYearRedirect()
-		db.collection('years').find({ year: req.year }, { rules: 1 }).limit(1).toArray (err, year) ->
-			throw err if err
-			res.render 'rules',
-				title: 'SantaHack'
-				rules: year[0].rules
+# /
+app.get /^\/(\d{4})?\/?$/, (req, res) ->
+	if req.params[0]?
+		res.redirect "/#{req.params[0]}/home"
+	else
+		res.redirect '/home'
 
 app.get '/login', (req, res) ->
 	returnUrl = req.param 'return'
@@ -107,14 +91,14 @@ app.get '/login-return', (req, res) ->
 	# add error handling on all paths out
 	loginToken = req.param 'token'
 	req.session.user = undefined
-	
+
 	if loginToken?
 		lib.https.get "https://www.allegro.cc/account/authenticate-token/#{loginToken}", (response) ->
 			resBody = ''
-			
+
 			response.on 'data', (chunk) ->
 				resBody += chunk
-			
+
 			response.on 'end', () ->
 				parser = new lib.xml2js.Parser()
 				parser.addListener 'end', (loginInfo) ->
@@ -124,14 +108,32 @@ app.get '/login-return', (req, res) ->
 							name: loginInfo.response.member[0].name[0]
 							avatar: loginInfo.response.member[0].avatar[0]._
 							picture: loginInfo.response.member[0].picture[0]._
-						
+
 						db.collection('users').update { id: user.id }, user, true, false
-						
+
 						req.session.user = user
-						
+
 						res.redirect (req.param 'return') ? '/'
-						
+
 				parser.parseString resBody
+
+# /home
+app.get /^\/(?:\d{4}\/)?home$/, (req, res) ->
+	if not req.needsYearRedirect()
+		db.collection('news').find({ year: req.year }).sort({ date: -1}).limit(5).toArray (err, news) ->
+			throw err if err
+			res.render 'home',
+				title: 'SantaHack'
+				posts: news
+
+# /rules
+app.get /^\/(?:\d{4}\/)?rules$/, (req, res) ->
+	if not req.needsYearRedirect()
+		db.collection('years').find({ year: req.year }, { rules: 1 }).limit(1).toArray (err, year) ->
+			throw err if err
+			res.render 'rules',
+				title: 'SantaHack'
+				rules: year[0].rules
 
 app.listen process.env.PORT
 console.log "Express server at http://localhost:%d/ in %s mode", process.env.PORT, app.settings.env
