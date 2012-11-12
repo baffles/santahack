@@ -4,12 +4,13 @@ lib =
 	marked: require 'marked'
 	mongolian: require 'mongolian'
 	moment: require 'moment'
-	querystring: require 'querystring'
-#	connect: require 'connect'
-	https: require 'https'
-	xml2js: require 'xml2js'
+	accSso: require './acc-sso'
+	data: require './data'
 
 db = if process.env.MONGOHQ_URL then new lib.mongolian process.env.MONGOHQ_URL else new lib.mongolian().db 'test'
+
+accSso = new lib.accSso
+data = new lib.data db
 
 app = lib.express()
 
@@ -32,24 +33,37 @@ app.use lib.express.session
 app.use lib.express.bodyParser()
 app.use lib.express.methodOverride()
 
+# add year to request object, if there is one. add a year redirect convenience function for pages that need a year
 app.use (req, res, next) ->
 	yearMatch = req.path.match(/^\/(\d{4})\//)
 	req.year = res.locals.year = parseInt(yearMatch[1]) if yearMatch?
 	res.locals.genLink = (path) -> "/#{req.year}#{path}"
 	req.needsYearRedirect = () ->
 		if not req.year?
-			db.collection('years').find({}, { year: 1 }).sort({ year: -1 }).limit(1).toArray (err, year) ->
+			data.getDefaultYear (err, year) ->
 				throw err if err
-				res.redirect "/#{year[0].year}#{req.path}"
+				res.redirect "/#{year}#{req.path}"
 			return true
 		else
 			return false
 	next()
 
+# make user, session data and return URL available to templates
 app.use (req, res, next) ->
 	res.locals.session = req.session
 	res.locals.returnURL = req.path
+	req.user = data.upgradeUser req.session?.user
 	next()
+
+# query for and make competition data available to templates
+app.use (req, res, next) ->
+	if req.year?
+		data.getCompetition req.year, (err, competition) ->
+			res.locals.competition = competition
+			res.locals.competitionStates = lib.data.competitionStates
+			next(err)
+	else
+		next()
 
 app.use app.router
 
@@ -79,61 +93,109 @@ app.get /^\/(\d{4})?\/?$/, (req, res) ->
 
 app.get '/login', (req, res) ->
 	returnUrl = req.param 'return'
-	accReturn = "http://#{req.host}/login-return"
+	accReturn = process.env.ACCRETURN ? "http://#{req.host}/login-return"
 	accReturn += "$return=#{returnUrl}" if returnUrl?
-	res.redirect "http://www.allegro.cc/account/login/#{accReturn}"
+	res.redirect accSso.getLoginUrl accReturn
 
 app.get '/logout', (req, res) ->
-	req.session.user = undefined
+	req.session.user = null
 	res.redirect (req.param 'return') ? '/'
 
-app.get '/login-return', (req, res) ->
-	# add error handling on all paths out
-	loginToken = req.param 'token'
-	req.session.user = undefined
+app.get '/login-return', (req, res, next) ->
+	req.session.user = null
 
-	if loginToken?
-		lib.https.get "https://www.allegro.cc/account/authenticate-token/#{loginToken}", (response) ->
-			resBody = ''
+	accSso.processAuthenticationToken (req.param 'token'), (accErr, accUser) ->
+		if accErr?
+			next(accErr)
+		else
+			data.updateUserData accUser
+			data.getUserData accUser.id, (err, user) ->
+				if err?
+					next(err)
+				else
+					req.session.user = user
+					res.redirect (req.param 'return') ? '/'
 
-			response.on 'data', (chunk) ->
-				resBody += chunk
+app.get '/admin', (req, res) ->
+	res.render 'admin',
+		title: 'SantaHack Admin'
 
-			response.on 'end', () ->
-				parser = new lib.xml2js.Parser()
-				parser.addListener 'end', (loginInfo) ->
-					if loginInfo.response.$.valid == 'true'
-						user =
-							id: loginInfo.response.member[0].$.id
-							name: loginInfo.response.member[0].name[0]
-							avatar: loginInfo.response.member[0].avatar[0]._
-							picture: loginInfo.response.member[0].picture[0]._
-
-						db.collection('users').update { id: user.id }, user, true, false
-
-						req.session.user = user
-
-						res.redirect (req.param 'return') ? '/'
-
-				parser.parseString resBody
+app.get '/info.json', (req, res) ->
+	data.getDefaultCompetition (err, competition) ->
+		now = new Date().valueOf()
+		res.json
+			year: competition.year
+			participants: 0
+			currentPhase: competition.getState().jsonDisplay
+			timeLeft:
+					'registration-begin': (competition.registrationBegin.valueOf() - now) / 1000 | 0
+					'registration-end': (competition.registrationEnd.valueOf() - now) / 1000 | 0
+					'voting-begin': (competition.votingBegin.valueOf() - now) / 1000 | 0
+					'voting-end': (competition.votingEnd.valueOf() - now) / 1000 | 0
+					'development-begin': (competition.devBegin.valueOf() - now) / 1000 | 0
+					'development-end': (competition.devEnd.valueOf() - now) / 1000 | 0
+					'release-gifts': (competition.privateRelease.valueOf() - now) / 1000 | 0
+					'release-public': (competition.publicRelease.valueOf() - now) / 1000 | 0
 
 # /home
-app.get /^\/(?:\d{4}\/)?home$/, (req, res) ->
+app.get /^\/(?:\d{4}\/)?home$/, (req, res, next) ->
 	if not req.needsYearRedirect()
-		db.collection('news').find({ year: req.year }).sort({ date: -1}).limit(5).toArray (err, news) ->
-			throw err if err
-			res.render 'home',
-				title: 'SantaHack'
-				posts: news
+		data.getNews req.year, 5, (err, news) ->
+			if err?
+				next(err)
+			else
+				res.render 'home',
+					title: 'SantaHack'
+					posts: news
+
+app.get /^\/(?:\d{4}\/)?years$/, (req, res) ->
+	if not req.needsYearRedirect()
+		#data.getCompetition req.year, (err, competition) ->
+			res.send res.locals.competition.getState()
+	#	competitionHelper.getCompetitionList (err, years) ->
+			#res.send JSON.stringify years
 
 # /rules
 app.get /^\/(?:\d{4}\/)?rules$/, (req, res) ->
 	if not req.needsYearRedirect()
-		db.collection('years').find({ year: req.year }, { rules: 1 }).limit(1).toArray (err, year) ->
-			throw err if err
-			res.render 'rules',
-				title: 'SantaHack'
-				rules: year[0].rules
+		res.render 'rules',
+			title: 'SantaHack'
+
+# /participants
+
+# /join
+
+# /withdraw
+
+# /wishlist
+
+# /vote
+
+# /task
+
+# /submit
+
+# /gift
+
+# /downloads
+
+#! add log page
+
+# admin functions
+app.get '/admin/getCompetitionList', (req, res) ->
+	data.getCompetitionList (err, years) ->
+		if err?
+			res.json 500, err
+		else
+			res.json years
+
+app.get '/admin/getCompetition', (req, res) ->
+	data.getCompetition parseInt(req.param('year')), (err, comp) ->
+		if err?
+			res.json 500, err
+		else
+			comp._id = undefined # we don't want to send this crap
+			res.json comp
 
 app.listen process.env.PORT
 console.log "Express server at http://localhost:%d/ in %s mode", process.env.PORT, app.settings.env

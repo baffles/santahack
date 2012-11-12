@@ -1,0 +1,77 @@
+!!!
+html
+	head
+		title= title
+		meta(name='viewport', content='width=device-width, initial-scale=1.0')
+		link(rel='stylesheet', href='/static/lib/bootstrap/css/bootstrap.min.css', media='screen')
+		link(rel='stylesheet', href='/static/lib/bootstrap/css/bootstrap-responsive.min.css')
+		link(rel='shortcut icon', href='/static/images/favicon.ico')
+		script(type='text/javascript', src='//ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js')
+		script(type='text/javascript', src='/static/lib/bootstrap/js/bootstrap.min.js')
+		script(type='text/javascript', src='/static/js/admin.js')
+		:less
+			body { padding-top: 60px }
+			#spinner { width: 15px; height: 15px; }
+
+	body
+		.navbar.navbar-fixed-top
+			.navbar-inner
+				.container
+					a.brand(href='#') SantaHack
+					ul#navbar.nav.nav-tabs
+						li.active: a(href='#competition', data-toggle='tab') Competition Info
+						li: a(href='#news', data-toggle='tab') News
+						li: a(href='#pairings', data-toggle='tab') Pairings
+						li: a(href='#gifts', data-toggle='tab') Gifts
+					ul.pull-right.nav
+						li: a: img#spinner(src='/static/images/ajax-loader.gif')
+						li
+							a#compoDropdown.dropdown-toggle(href='#', data-toggle='dropdown')
+								span#compoDropdownLabel Loading...
+								| 
+								b.caret
+							ul#compoDropdownMenu.dropdown-menu(aria-labelledby='compoDropdown')
+
+		.tab-content
+			#competition.tab-pane.active
+				.container
+					form.form-horizontal
+						fieldset
+							legend Competition Info
+							.control-group
+								label.control-label(for='regBegin') Registration Begins
+								.controls: input#regBegin(type='text', placeholder='Registration Begins')
+							.control-group
+								label.control-label(for='regEnd') Registration Ends
+								.controls: input#regEnd(type='text', placeholder='Registration Ends')
+							.control-group
+								label.control-label(for='voteBegin') Voting Begins
+								.controls: input#voteBegin(type='text', placeholder='Voting Begins')
+							.control-group
+								label.control-label(for='voteEnd') Voting Ends
+								.controls: input#voteEnd(type='text', placeholder='Voting Ends')
+							.control-group
+								label.control-label(for='devBegin') Development Begins
+								.controls: input#devBegin(type='text', placeholder='Development Begins')
+							.control-group
+								label.control-label(for='devEnd') Development Ends
+								.controls: input#devEnd(type='text', placeholder='Development Ends')
+							.control-group
+								label.control-label(for='entryCutoff') Entry Cutoff
+								.controls: input#entryCutoff(type='text', placeholder='Entry Cutoff')
+							.control-group
+								label.control-label(for='privRelease') Private Release
+								.controls: input#privRelease(type='text', placeholder='Private Release')
+							.control-group
+								label.control-label(for='pubRelease') Public Release
+								.controls: input#pubRelease(type='text', placeholder='Public Release')
+							.control-group
+								label.control-label(for='rules') Rules
+								.controls: textarea#rules.input-xxlarge(rows='10')
+							
+			#news.tab-pane
+				.container News
+			#pairings.tab-pane
+				.container Pairings
+			#gifts.tab-pane
+				.container Gifts
