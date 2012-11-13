@@ -190,12 +190,27 @@ app.get '/admin/getCompetitionList', (req, res) ->
 			res.json years
 
 app.get '/admin/getCompetition', (req, res) ->
-	data.getCompetition parseInt(req.param('year')), (err, comp) ->
+	data.getCompetition parseInt(req.param 'year'), (err, comp) ->
 		if err?
 			res.json 500, err
 		else
 			comp._id = undefined # we don't want to send this crap
 			res.json comp
+
+app.post '/admin/saveCompetition', (req, res) ->
+	data.saveCompetition req.body
+	res.json { success: true }
+	
+	#res.json
+	#	success: false
+	#	error: 'you suck'
+
+app.get '/admin/getNews', (req, res) ->
+	data.getNews parseInt(req.param 'year'), 0, (err, news) ->
+		if err?
+			res.json 500, err
+		else
+			res.json news
 
 app.listen process.env.PORT
 console.log "Express server at http://localhost:%d/ in %s mode", process.env.PORT, app.settings.env

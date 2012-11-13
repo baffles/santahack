@@ -53,6 +53,21 @@ module.exports = class Data
 		throw 'callback required' if not callback?
 		@competitionsCollection.find({}, { year: 1 }).sort({ year: -1 }).map((year) -> year.year).toArray (err, years) -> callback err, years if not err?
 	
+	saveCompetition: (competition) ->
+		# clean up the competition object
+		competition.year = parseInt(competition.year)
+		competition.registrationBegin = new Date competition.registrationBegin
+		competition.registrationEnd = new Date competition.registrationEnd
+		competition.votingBegin = new Date competition.votingBegin
+		competition.votingEnd = new Date competition.votingEnd
+		competition.devBegin = new Date competition.devBegin
+		competition.devEnd = new Date competition.devEnd
+		competition.entryCutoff = new Date competition.entryCutoff
+		competition.privateRelease = new Date competition.privateRelease
+		competition.publicRelease = new Date competition.publicRelease
+		
+		@competitionsCollection.update { year: competition.year }, { $set: competition }, true, false
+	
 	getCompetitionState: (competition) ->
 		now = new Date
 		if now < competition.registrationBegin
@@ -94,7 +109,6 @@ module.exports = class Data
 		@usersCollection.findOne { id: id }, (err, user) -> callback err, user if not err?
 	
 	updateUserData: (user) ->
-		#db.collection('users').update { id: user.id }, user, true, false
 		@usersCollection.update { id: user.id }, { $set: user }, true, false
 	
 	getUserCompetitionEntries: (user, err, callback) ->

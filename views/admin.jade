@@ -8,10 +8,12 @@ html
 		link(rel='shortcut icon', href='/static/images/favicon.ico')
 		script(type='text/javascript', src='//ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js')
 		script(type='text/javascript', src='/static/lib/bootstrap/js/bootstrap.min.js')
+		script(type='text/javascript', src='/static/lib/moment/moment.min.js')
 		script(type='text/javascript', src='/static/js/admin.js')
 		:less
 			body { padding-top: 60px }
 			#spinner { width: 15px; height: 15px; }
+			input.date { }
 
 	body
 		.navbar.navbar-fixed-top
@@ -35,42 +37,71 @@ html
 		.tab-content
 			#competition.tab-pane.active
 				.container
-					form.form-horizontal
+					form#competitionForm.form-horizontal
 						fieldset
 							legend Competition Info
 							.control-group
 								label.control-label(for='regBegin') Registration Begins
-								.controls: input#regBegin(type='text', placeholder='Registration Begins')
+								.controls
+									input#regBegin.input-medium.date(type='text', placeholder='Registration Begins', data-type='date')
+									span.help-inline
 							.control-group
 								label.control-label(for='regEnd') Registration Ends
-								.controls: input#regEnd(type='text', placeholder='Registration Ends')
+								.controls
+									input#regEnd.input-medium(type='text', placeholder='Registration Ends', data-type='date')
+									span.help-inline
 							.control-group
 								label.control-label(for='voteBegin') Voting Begins
-								.controls: input#voteBegin(type='text', placeholder='Voting Begins')
+								.controls
+									input#voteBegin.input-medium(type='text', placeholder='Voting Begins', data-type='date')
+									span.help-inline
 							.control-group
 								label.control-label(for='voteEnd') Voting Ends
-								.controls: input#voteEnd(type='text', placeholder='Voting Ends')
+								.controls
+									input#voteEnd.input-medium(type='text', placeholder='Voting Ends', data-type='date')
+									span.help-inline
 							.control-group
 								label.control-label(for='devBegin') Development Begins
-								.controls: input#devBegin(type='text', placeholder='Development Begins')
+								.controls
+									input#devBegin.input-medium(type='text', placeholder='Development Begins', data-type='date')
+									span.help-inline
 							.control-group
 								label.control-label(for='devEnd') Development Ends
-								.controls: input#devEnd(type='text', placeholder='Development Ends')
+								.controls
+									input#devEnd.input-medium(type='text', placeholder='Development Ends', data-type='date')
+									span.help-inline
 							.control-group
 								label.control-label(for='entryCutoff') Entry Cutoff
-								.controls: input#entryCutoff(type='text', placeholder='Entry Cutoff')
+								.controls
+									input#entryCutoff.input-medium(type='text', placeholder='Entry Cutoff', data-type='date')
+									span.help-inline
 							.control-group
 								label.control-label(for='privRelease') Private Release
-								.controls: input#privRelease(type='text', placeholder='Private Release')
+								.controls
+									input#privRelease.input-medium(type='text', placeholder='Private Release', data-type='date')
+									span.help-inline
 							.control-group
 								label.control-label(for='pubRelease') Public Release
-								.controls: input#pubRelease(type='text', placeholder='Public Release')
+								.controls
+									input#pubRelease.input-medium(type='text', placeholder='Public Release', data-type='date')
+									span.help-inline
 							.control-group
 								label.control-label(for='rules') Rules
 								.controls: textarea#rules.input-xxlarge(rows='10')
+							.control-group
+								.controls
+									button.btn.btn-primary(name='save') Save changes
+									button.btn(name='discard') Discard changes
 							
 			#news.tab-pane
-				.container News
+				.container
+					table.table.table-striped
+						thead
+							tr
+								td Date
+								td Title
+								td Post
+						tbody#newsTBody
 			#pairings.tab-pane
 				.container Pairings
 			#gifts.tab-pane
