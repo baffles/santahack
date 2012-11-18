@@ -1,3 +1,6 @@
+lib =
+	mongolian: require 'mongolian'
+
 module.exports = class Data
 	@competitionStates:
 		Upcoming: { seq: 1, jsonDisplay: 'upcoming' }
@@ -28,6 +31,24 @@ module.exports = class Data
 	getNews: (year, num, callback) ->
 		throw 'callback required' if not callback?
 		@newsCollection.find({ year: year }).sort({ date: -1}).limit(num).toArray (err, news) -> callback err, news if not err?
+	
+	saveNews: (post) ->
+		# clean up the news object
+		dbPost =
+			year: parseInt post.year
+			date: new Date post.date
+			title: post.title
+			content: post.content
+		
+		if post._id?
+			@newsCollection.update { _id: new lib.mongolian.ObjectId(post._id) }, { $set: dbPost }
+		else
+			@newsCollection.save dbPost
+	
+	deleteNews: (post) ->
+		# remove a news entry
+		if post._id?
+			@newsCollection.remove { _id: new lib.mongolian.ObjectId(post._id) }
 	
 	# Competitions
 	# upgrade competition object with helper functions from this class

@@ -20,7 +20,7 @@ app.set 'view engine', 'jade'
 app.use lib.express.favicon "#{__dirname}/public/images/favicon.ico"
 
 app.use lib.compiler
-	enabled: [ 'coffee', 'less', 'uglify' ]
+	enabled: [ 'coffee', 'stylus', 'uglify', 'jade' ]
 	src: 'assets'
 	dest: 'assets/compiled'
 	mount: '/static'
@@ -182,6 +182,7 @@ app.get /^\/(?:\d{4}\/)?rules$/, (req, res) ->
 #! add log page
 
 # admin functions
+#add auth checking! and maybe check errors from DB on updates/saves
 app.get '/admin/getCompetitionList', (req, res) ->
 	data.getCompetitionList (err, years) ->
 		if err?
@@ -210,7 +211,17 @@ app.get '/admin/getNews', (req, res) ->
 		if err?
 			res.json 500, err
 		else
+			newsItem._id = newsItem._id.toString() for newsItem in news
+			newsItem.html = lib.marked(newsItem.content) for newsItem in news
 			res.json news
+
+app.post '/admin/saveNews', (req, res) ->
+	data.saveNews req.body
+	res.json { success: true }
+
+app.post '/admin/deleteNews', (req, res) ->
+	data.deleteNews req.body
+	res.json { success: true }
 
 app.listen process.env.PORT
 console.log "Express server at http://localhost:%d/ in %s mode", process.env.PORT, app.settings.env
