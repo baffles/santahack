@@ -3,6 +3,11 @@ curTab = '#competition'
 
 dateFormat = 'M/D/YY h:mm A'
 
+class Tab
+	constructor: () ->
+
+Admin = new class
+	constructor: () ->
 $ () ->
 	$("#spinner}").bind "ajaxSend", () -> $(this).show()
 	$("#spinner}").bind "ajaxStop", () -> $(this).hide()
@@ -39,14 +44,26 @@ $ () ->
 			$(this).get(0).selectionStart =
 			$(this).get(0).selectionEnd = start + 1;
 	
-	$('#competitionForm button[name="save"]').click (e) ->
+	$saveButton = $('#competitionForm button[name="save"]')
+	$saveButton.button()
+	$saveButton.attr
+		'data-loading-text': 'Saving...'
+		'data-complete-text': 'Saved'
+	
+	$saveButton.click (e) ->
 		e.preventDefault()
 		saveData()
 	
 	$('#competitionForm button[name="discard"]').click (e) ->
 		e.preventDefault()
 		loadData()
-		
+	
+	$('input', $ '#competitionForm').keyup () ->
+		$saveButton.button 'reset'
+	
+	$('textarea', $ '#competitionForm').keyup () ->
+		$saveButton.button 'reset'
+	
 	loadCompetitions()
 
 # need to monitor for edits to set dirty to prompt for save
@@ -85,7 +102,6 @@ loadData = () ->
 				url: "/admin/getCompetition?year=#{curYear}"
 				cache: false
 				success: (comp) ->
-					console.log comp
 					$('#competitionForm #regBegin').val moment(comp.registrationBegin).format dateFormat
 					$('#competitionForm #regEnd').val moment(comp.registrationEnd).format dateFormat
 					$('#competitionForm #voteBegin').val moment(comp.votingBegin).format dateFormat
@@ -105,17 +121,121 @@ loadData = () ->
 							.addClass if valid then 'success' else 'error'
 
 						$($(this).siblings('.help-inline').get 0).text if valid then '' else "#{dateFormat} (e.g., #{moment().format dateFormat})"
+					
+					$('#competitionForm button[name="save"]').button 'complete'
 				error: (req, status, errMsg) ->
 					alert "Error loading competition: #{status}\n#{errMsg}"
 		
 		when '#news'
+			newsEditClick = (newsItem) -> () ->
+				$popup = $('<div>').addClass('modal hide fade').attr
+					tabindex: '-1'
+					role: 'dialog'
+					'aria-labelledby': 'label'
+					'aria-hidden': 'true'
+				
+				$popup.append $('<div>').addClass('modal-header')
+					.append($('<button>').text('x').addClass('close').attr
+						'data-dismiss': 'modal'
+						'aria-hidden': 'true'
+					)
+					.append($('<h3>').attr('id', 'label').text if newsItem? then 'Edit News Post' else 'Add News Post')
+				
+				$popup.append $popupBody = $('<div>').addClass('modal-body').append($('#editNewsForm'))
+				
+				$popup.append $('<div>').addClass('modal-footer')
+					.append($('<button>').text('Close').addClass('btn').attr
+						'data-dismiss': 'modal'
+						'aria-hidden': 'true'
+					)
+					.append($saveButton = $('<button>').text('Save').addClass('btn btn-primary')).attr(
+						'data-loading-text': 'Saving...'
+						'data-complete-text': 'Saved!'
+						autocomplete: 'off'
+					)
+				
+				$newsDate = $('#editNewsForm #newsDate', $popup)
+				$newsTitle = $('#editNewsForm #newsTitle', $popup)
+				$newsPost = $('#editNewsForm #newsPost', $popup)
+				
+				$newsDate.val moment(newsItem?.date)?.format dateFormat
+				$newsTitle.val newsItem?.title
+				$newsPost.val newsItem?.content
+				
+				# validation
+				$newsDate.keyup () ->
+					valid = moment($(this).val(), dateFormat)?.isValid()
+
+					$($(this).parents('.control-group').get 0)
+						.removeClass('warning error info success')
+						.addClass if valid then 'success' else 'error'
+
+					$($(this).siblings('.help-inline').get 0).text if valid then '' else "#{dateFormat} (e.g., #{new moment().format dateFormat})"
+				
+				$newsTitle.blur () ->
+					valid = $(this).val().length > 0
+
+					$($(this).parents('.control-group').get 0)
+						.removeClass('warning error info success')
+						.addClass if valid then 'success' else 'error'
+
+					$($(this).siblings('.help-inline').get 0).text if valid then '' else 'Enter a title'
+
+				# enable tab in content textbox (for markdown)
+				$popup.delegate '#newsPost', 'keydown', (e) ->
+					keyCode = e.keyCode || e.which;
+
+					if keyCode == 9
+						e.preventDefault();
+						start = $(this).get(0).selectionStart;
+						end = $(this).get(0).selectionEnd;
+
+						# set textarea value to: text before caret + tab + text after caret
+						$(this).val $(this).val().substring(0, start) + "\t" + $(this).val().substring(end);
+
+						# put caret at right position again
+						$(this).get(0).selectionStart =
+						$(this).get(0).selectionEnd = start + 1;
+				
+				$popup.button()
+				$saveButton.click () ->
+					$saveButton.button 'loading'
+					
+					# need all values entered
+					if $newsDate.val().length == 0 or $newsTitle.val().length == 0 or $newsPost.val().length == 0 or $('#editNewsForm .error', $popup).length > 0
+						alert 'Please ensure valid values are entered for all fields'
+						$saveButton.button 'reset'
+						return
+					
+					alert 'SAVE'
+					# close the popup and reload the news
+					$saveButton.button 'complete'
+					#$popup.modal 'hide'
+					#loadData()
+				
+				$popup.modal()
+			
 			$.ajax
 				url: "/admin/getNews?year=#{curYear}"
 				cache: false
 				success: (news) ->
-					console.log news
+					$newsTable = $ '#newsTBody'
+					$newsTable.empty()
+					
 					for newsItem in news
-						$('#newsTBody').append("<tr><td>#{newsItem.date}</td><td>#{newsItem.title}</td><td>#{newsItem.content}</td></tr>")
+						$newsRow = $ '<tr>'
+						$newsRow.append $('<td>').text moment(newsItem.date).format dateFormat
+						$newsRow.append $('<td>').text newsItem.title
+						$newsRow.append $('<td>').html newsItem.html
+						$newsRow.append $('<td>').append $editButton = $('<button>').addClass('btn').attr('type', 'button').text('Edit')
+						
+						$newsTable.append $newsRow
+						
+						$editButton.click newsEditClick newsItem
+					
+					$addRow = $('<tr>').append($('<td>')).append($('<td>')).append($('<td>')).append $('<td>').append $addButton = $('<button>').addClass('btn').attr('type', 'button').text('Add')
+					$newsTable.append $addRow
+					$addButton.click newsEditClick null
 				error: (req, status, errMsg) ->
 					alert "Error loading news: #{status}\n#{errMsg}"
 
@@ -123,8 +243,12 @@ saveData = () ->
 	console.log "save #{curTab} for #{curYear}"
 	switch curTab
 		when '#competition'
+			$saveButton = $('#competitionForm button[name="save"]')
+			$saveButton.button 'loading'
+			
 			if $('#competitionForm .error').length > 0
 				alert 'Please correct any errors'
+				$saveButton.button 'reset'
 				return
 			
 			competition =
@@ -148,6 +272,10 @@ saveData = () ->
 				success: (reply) ->
 					if !reply.success
 						alert "Error saving competition:\n#{reply.error}"
+						$saveButton.button 'reset'
+					else
+						$saveButton.button 'complete'
 				error: (req, status, errMsg) ->
 					alert "Error saving competition: #{status}\n#{errMsg}"
+					$saveButton.button 'reset'
 		
