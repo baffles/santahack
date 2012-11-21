@@ -3,11 +3,12 @@ lib =
 	compiler: require 'connect-compiler'
 	marked: require 'marked'
 	mongolian: require 'mongolian'
+	mongoStore: require 'connect-mongo'
 	moment: require 'moment'
 	accSso: require './acc-sso'
 	data: require './data'
 
-db = if process.env.MONGOHQ_URL then new lib.mongolian process.env.MONGOHQ_URL else new lib.mongolian().db 'test'
+db = if process.env.MONGOHQ_URL? then new lib.mongolian process.env.MONGOHQ_URL else new lib.mongolian().db 'test'
 
 accSso = new lib.accSso
 data = new lib.data db
@@ -28,8 +29,12 @@ app.use '/static', lib.express.static "#{__dirname}/public"
 app.use '/static', lib.express.static "#{__dirname}/assets/compiled"
 
 app.use lib.express.cookieParser()
+
 app.use lib.express.session
-	secret: 'trolololol'
+	store: new (lib.mongoStore lib.express)
+		url: process.env.MONGOHQ_URL
+		db: 'test'
+	secret: 'santa shack'
 app.use lib.express.bodyParser()
 app.use lib.express.methodOverride()
 
@@ -113,6 +118,7 @@ app.get '/login-return', (req, res, next) ->
 				if err?
 					next(err)
 				else
+					delete user._id # no need to store the db ID in the session
 					req.session.user = user
 					res.redirect (req.param 'return') ? '/'
 
@@ -212,7 +218,7 @@ app.get '/admin/getCompetition', (req, res) ->
 			res.json 500, err
 		else
 			if comp?
-				comp._id = undefined # we don't want to send this crap
+				delete comp._id # we don't want to send this crap
 				res.json comp
 			else
 				res.json null
@@ -277,4 +283,4 @@ app.post '/admin/deleteNews', (req, res) ->
 	res.json { success: true }
 
 app.listen process.env.PORT
-console.log "Express server at http://localhost:%d/ in %s mode", process.env.PORT, app.settings.env
+console.log "Express server at http://localhost:%d/ in %s mode", process.env.PORT, process.env.NODE_ENV #app.settings.env
