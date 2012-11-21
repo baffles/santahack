@@ -17,21 +17,20 @@ html
 					li: a(href=genLink('/rules')) Rules
 					//- participants is only shown for competitions 
 					//- need to add some sort of preferences page or something with join/withdraw competition links
+					if session.user != null && compSeq == competitionStates.Registration.seq
+						li: a(href=genLink('/wishlist')) Wishlist
 					if compSeq > competitionStates.Upcoming.seq
 						li: a(href=genLink('/participants')) Participants
-					if compSeq == competitionStates.Registration.seq
-						li: a(href=genLink('/join')) Join
-						li: a(href=genLink('/withdraw')) Withdraw
 					if compSeq >= competitionStates.ReleasePublic.seq
 						li: a(href=genLink('/downloads')) Downloads
 					//- add the isLoggedIn and in competition stuff after (see above)
 			#user
-				if session.user
+				if session.user != null
 					img#avatar(src='http://static.allegro.cc/image/avatar/' + session.user.avatar)
 					span#usertext= session.user.name
 					span#useraction
 						[
-						if session.user.admin
+						if session.user.isAdmin
 							a(href='/admin') Admin
 							|  | 
 						a(href='/logout?return=' + returnURL) Log Out

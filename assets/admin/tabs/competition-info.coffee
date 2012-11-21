@@ -80,16 +80,28 @@ class CompetitionInfoTab extends Tab
 			url: "/admin/getCompetition?year=#{year}"
 			cache: false
 			success: (comp) =>
-				@$regBegin.val moment(comp.registrationBegin).format dateFormat
-				@$regEnd.val moment(comp.registrationEnd).format dateFormat
-				@$voteBegin.val moment(comp.votingBegin).format dateFormat
-				@$voteEnd.val moment(comp.votingEnd).format dateFormat
-				@$devBegin.val moment(comp.devBegin).format dateFormat
-				@$devEnd.val moment(comp.devEnd).format dateFormat
-				@$entryCutoff.val moment(comp.entryCutoff).format dateFormat
-				@$privRelease.val moment(comp.privateRelease).format dateFormat
-				@$pubRelease.val moment(comp.publicRelease).format dateFormat
-				@$rules.val comp.rules
+				if comp?
+					@$regBegin.val moment(comp.registrationBegin).format dateFormat
+					@$regEnd.val moment(comp.registrationEnd).format dateFormat
+					@$voteBegin.val moment(comp.votingBegin).format dateFormat
+					@$voteEnd.val moment(comp.votingEnd).format dateFormat
+					@$devBegin.val moment(comp.devBegin).format dateFormat
+					@$devEnd.val moment(comp.devEnd).format dateFormat
+					@$entryCutoff.val moment(comp.entryCutoff).format dateFormat
+					@$privRelease.val moment(comp.privateRelease).format dateFormat
+					@$pubRelease.val moment(comp.publicRelease).format dateFormat
+					@$rules.val comp.rules
+				else
+					@$regBegin.val ''
+					@$regEnd.val ''
+					@$voteBegin.val ''
+					@$voteEnd.val ''
+					@$devBegin.val ''
+					@$devEnd.val ''
+					@$entryCutoff.val ''
+					@$privRelease.val ''
+					@$pubRelease.val ''
+					@$rules.val ''
 				
 				# run validation on received data
 				$('input[data-type="date"]', @$container).each () ->

@@ -1,6 +1,3 @@
-lib =
-	mongolian: require 'mongolian'
-
 module.exports = class Data
 	@competitionStates:
 		Upcoming: { seq: 1, jsonDisplay: 'upcoming' }
@@ -34,16 +31,12 @@ module.exports = class Data
 	
 	saveNews: (post) ->
 		# clean up the news object
-		dbPost =
-			year: parseInt post.year
-			date: new Date post.date
-			title: post.title
-			content: post.content
-		
 		if post._id?
-			@newsCollection.update { _id: new lib.mongolian.ObjectId(post._id) }, { $set: dbPost }
+			id = post._id
+			delete post._id # since we can't update including the _id object
+			@newsCollection.update { _id: id }, { $set: post }
 		else
-			@newsCollection.save dbPost
+			@newsCollection.save post
 	
 	deleteNews: (post) ->
 		# remove a news entry
@@ -55,7 +48,7 @@ module.exports = class Data
 	upgradeCompetition: (competition) ->
 		if competition?
 			competition.getState = () => @getCompetitionState(competition)
-			competition.getEntries = (err, callback) => @getEntrants(competition)
+			competition.getEntries = (callback) => @getEntrants(competition)
 		competition
 	
 	getDefaultYear: (callback) ->
@@ -75,18 +68,6 @@ module.exports = class Data
 		@competitionsCollection.find({}, { year: 1 }).sort({ year: -1 }).map((year) -> year.year).toArray (err, years) -> callback err, years if not err?
 	
 	saveCompetition: (competition) ->
-		# clean up the competition object
-		competition.year = parseInt(competition.year)
-		competition.registrationBegin = new Date competition.registrationBegin
-		competition.registrationEnd = new Date competition.registrationEnd
-		competition.votingBegin = new Date competition.votingBegin
-		competition.votingEnd = new Date competition.votingEnd
-		competition.devBegin = new Date competition.devBegin
-		competition.devEnd = new Date competition.devEnd
-		competition.entryCutoff = new Date competition.entryCutoff
-		competition.privateRelease = new Date competition.privateRelease
-		competition.publicRelease = new Date competition.publicRelease
-		
 		@competitionsCollection.update { year: competition.year }, { $set: competition }, true, false
 	
 	getCompetitionState: (competition) ->
@@ -112,17 +93,28 @@ module.exports = class Data
 		else # sanity check
 			throw "unknown competition state"
 	
-	# Entrants
+	# Entries
 	getCompetitionEntries: (competition, callback) ->
 		throw 'callback required' if not callback?
 		@entriesCollection.find({ competition: competition.year }).toArray (err, entries) -> callback err, entries if not err?
 	
+	getUserCompetitionEntry: (user, competition, callback) ->
+		throw 'callback required' if not callback?
+		@entriesCollection.findOne { user: user.id, competition: competition.year }, (err, entry) -> callback err, entry if not err?
+	
+	getUserCompetitionEntries: (user, callback) ->
+		throw 'callback required' if not callback?
+		@entriesCollection.find({ user: user.id }).toArray (err, entries) -> callback err, entries if not err?
+	
+	saveCompetitionEntry: (entry) ->
+		
 	
 	# Users
 	# upgrade user object with helper functions from this class
 	upgradeUser: (user) ->
 		if user?
-			user.getCompetitionEntries = (err, callback) => @getUserCompetitionEntries user, err, callback
+			user.getCompetitionEntry = (competition, callback) => @getUserCompetitionEntry user, competition, callback
+			user.getCompetitionEntries = (competition, callback) => @getUserCompetitionEntries user, callback
 		user
 	
 	getUserData: (id, callback) ->
@@ -131,7 +123,3 @@ module.exports = class Data
 	
 	updateUserData: (user) ->
 		@usersCollection.update { id: user.id }, { $set: user }, true, false
-	
-	getUserCompetitionEntries: (user, err, callback) ->
-		throw 'callback required' if not callback?
-		@entrantsCollection.find({ user: user.id }).toArray (err, entries) -> callback err, entries if not err?

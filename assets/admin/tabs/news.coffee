@@ -72,6 +72,10 @@ class NewsTab extends Tab
 					$(this).get(0).selectionStart =
 					$(this).get(0).selectionEnd = start + 1;
 			
+			$('#editNewsForm', $popup).submit (e) ->
+				e.preventDefault()
+				$saveButton.click()
+			
 			$saveButton.click () =>
 				$saveButton.button 'saving'
 
@@ -101,7 +105,7 @@ class NewsTab extends Tab
 							$saveButton.button 'reset'
 						else
 							$saveButton.button 'saved'
-							@loadData(@curYear)
+							@loadData @curYear
 							
 							setTimeout((-> $popup.modal 'hide'), 1000)
 					error: (req, status, errMsg) =>
@@ -149,7 +153,7 @@ class NewsTab extends Tab
 							$delButton.button 'reset'
 						else
 							$delButton.button 'deleted'
-							@loadData(@curYear)
+							@loadData @curYear
 							
 							setTimeout((-> $popup.modal 'hide'), 1000)
 					error: (req, status, errMsg) =>

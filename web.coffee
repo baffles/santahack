@@ -117,6 +117,10 @@ app.get '/login-return', (req, res, next) ->
 					res.redirect (req.param 'return') ? '/'
 
 app.get '/admin', (req, res) ->
+	if not req.session?.user?.isAdmin
+		res.send 401, 'Unauthorized.'
+		return
+	
 	res.render 'admin',
 		title: 'SantaHack Admin'
 
@@ -168,6 +172,10 @@ app.get /^\/(?:\d{4}\/)?rules$/, (req, res) ->
 # /withdraw
 
 # /wishlist
+app.get /^\/(?:\d{4}\/)?wishlist$/, (req, res) ->
+	if not req.needsYearRedirect()
+		res.render 'wishlist',
+			title: 'SantaHack'
 
 # /vote
 
@@ -184,6 +192,10 @@ app.get /^\/(?:\d{4}\/)?rules$/, (req, res) ->
 # admin functions
 #add auth checking! and maybe check errors from DB on updates/saves
 app.get '/admin/getCompetitionList', (req, res) ->
+	if not req.session?.user?.isAdmin
+		res.json 401, { success: false, error: 'Unauthorized' }
+		return
+	
 	data.getCompetitionList (err, years) ->
 		if err?
 			res.json 500, err
@@ -191,22 +203,45 @@ app.get '/admin/getCompetitionList', (req, res) ->
 			res.json years
 
 app.get '/admin/getCompetition', (req, res) ->
+	if not req.session?.user?.isAdmin
+		res.json 401, { success: false, error: 'Unauthorized' }
+		return
+	
 	data.getCompetition parseInt(req.param 'year'), (err, comp) ->
 		if err?
 			res.json 500, err
 		else
-			comp._id = undefined # we don't want to send this crap
-			res.json comp
+			if comp?
+				comp._id = undefined # we don't want to send this crap
+				res.json comp
+			else
+				res.json null
 
 app.post '/admin/saveCompetition', (req, res) ->
-	data.saveCompetition req.body
-	res.json { success: true }
+	if not req.session?.user?.isAdmin
+		res.json 401, { success: false, error: 'Unauthorized' }
+		return
 	
-	#res.json
-	#	success: false
-	#	error: 'you suck'
+	competition =
+		year: parseInt req.body.year
+		registrationBegin: new Date req.body.registrationBegin
+		registrationEnd: new Date req.body.registrationEnd
+		votingBegin: new Date req.body.votingBegin
+		votingEnd: new Date req.body.votingEnd
+		devBegin: new Date req.body.devBegin
+		devEnd: new Date req.body.devEnd
+		entryCutoff: new Date req.body.entryCutoff
+		privateRelease: new Date req.body.privateRelease
+		publicRelease: new Date req.body.publicRelease
+	
+	data.saveCompetition competition
+	res.json { success: true }
 
 app.get '/admin/getNews', (req, res) ->
+	if not req.session?.user?.isAdmin
+		res.json 401, { success: false, error: 'Unauthorized' }
+		return
+	
 	data.getNews parseInt(req.param 'year'), 0, (err, news) ->
 		if err?
 			res.json 500, err
@@ -216,10 +251,28 @@ app.get '/admin/getNews', (req, res) ->
 			res.json news
 
 app.post '/admin/saveNews', (req, res) ->
-	data.saveNews req.body
+	if not req.session?.user?.isAdmin
+		res.json 401, { success: false, error: 'Unauthorized' }
+		return
+	
+	newsPost =
+		year: parseInt req.body.year
+		date: new Date req.body.date
+		title: req.body.title
+		content: req.body.content
+	
+	if req.body._id?
+		newsPost._id = new lib.mongolian.ObjectId req.body._id
+	
+	# todo: add error catching/reporting
+	data.saveNews newsPost
 	res.json { success: true }
 
 app.post '/admin/deleteNews', (req, res) ->
+	if not req.session?.user?.isAdmin
+		res.json 401, { success: false, error: 'Unauthorized' }
+		return
+	
 	data.deleteNews req.body
 	res.json { success: true }
 
