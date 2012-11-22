@@ -27,11 +27,11 @@ module.exports = class Data
 	# News
 	getNews: (year, num, callback) ->
 		throw 'callback required' if not callback?
-		@newsCollection.find({ year: year }).sort({ date: -1}).limit(num).toArray (err, news) -> callback err, news if not err?
+		@newsCollection.find({ year: year }).sort({ date: -1}).limit(num).toArray (err, news) -> callback err, news
 	
 	saveNews: (post) ->
-		# clean up the news object
 		if post._id?
+			# clean up the news object
 			id = post._id
 			delete post._id # since we can't update including the _id object
 			@newsCollection.update { _id: id }, { $set: post }
@@ -53,22 +53,23 @@ module.exports = class Data
 	
 	getDefaultYear: (callback) ->
 		throw 'callback required' if not callback?
-		@competitionsCollection.find({}, { year: 1 }).sort({ year: -1 }).limit(1).toArray (err, competitions) -> callback err, competitions[0].year if not err?
+		@competitionsCollection.find({}, { year: 1 }).sort({ year: -1 }).limit(1).toArray (err, competitions) -> callback err, competitions[0].year
 	
 	getDefaultCompetition: (callback) ->
 		throw 'callback required' if not callback?
-		@competitionsCollection.find().sort({ year: -1 }).limit(1).toArray (err, competitions) => callback err, @upgradeCompetition(competitions[0]) if not err?
+		@competitionsCollection.find().sort({ year: -1 }).limit(1).toArray (err, competitions) => callback err, @upgradeCompetition competitions[0]
 	
 	getCompetition: (year, callback) ->
 		throw 'callback required' if not callback?
-		@competitionsCollection.findOne { year: year }, (err, competition) => callback err, @upgradeCompetition(competition) if not err?
+		@competitionsCollection.findOne { year: year }, (err, competition) => callback err, @upgradeCompetition competition
 	
 	getCompetitionList: (callback) ->
 		throw 'callback required' if not callback?
-		@competitionsCollection.find({}, { year: 1 }).sort({ year: -1 }).map((year) -> year.year).toArray (err, years) -> callback err, years if not err?
+		@competitionsCollection.find({}, { year: 1 }).sort({ year: -1 }).map((year) -> year.year).toArray (err, years) -> callback err, years
 	
 	saveCompetition: (competition) ->
-		@competitionsCollection.update { year: competition.year }, { $set: competition }, true, false
+		if competition.year?
+			@competitionsCollection.update { year: competition.year }, { $set: competition }, true, false
 	
 	getCompetitionState: (competition) ->
 		now = new Date
@@ -94,20 +95,34 @@ module.exports = class Data
 			throw "unknown competition state"
 	
 	# Entries
+	upgradeEntry: (entry) ->
+		if entry?
+			entry.isWishlistComplete = () ->
+				entry.wishlist? and
+				entry.wishlist.wishes?.length == 3 and entry.wishlist.each (wish) -> wish.length > 0 and
+				entry.wishlist.machinePerformance?.length > 0 and entry.wishlist.preferredOS?.length > 0 and
+				entry.wishlist.canDev?.length > 0
+		entry
+	
 	getCompetitionEntries: (competition, callback) ->
 		throw 'callback required' if not callback?
-		@entriesCollection.find({ competition: competition.year }).toArray (err, entries) -> callback err, entries if not err?
+		@entriesCollection.find({ year: competition.year }).toArray (err, entries) => callback err, entries.map (entry) => @upgradeEntry entry
 	
 	getUserCompetitionEntry: (user, competition, callback) ->
 		throw 'callback required' if not callback?
-		@entriesCollection.findOne { user: user.id, competition: competition.year }, (err, entry) -> callback err, entry if not err?
+		@entriesCollection.findOne { user: user.id, year: competition.year }, (err, entry) => callback err, @upgradeEntry entry
 	
 	getUserCompetitionEntries: (user, callback) ->
 		throw 'callback required' if not callback?
-		@entriesCollection.find({ user: user.id }).toArray (err, entries) -> callback err, entries if not err?
+		@entriesCollection.find({ user: user.id }).toArray (err, entries) => callback err, entries.map (entry) => @upgradeEntry entry
 	
 	saveCompetitionEntry: (entry) ->
-		
+		if entry.user? and entry.year?
+			@entriesCollection.update { user: entry.user, year: entry.year }, { $set: entry }, true, false
+	
+	removeCompetitionEntry: (entry) ->
+		if entry.user? and entry.year?
+			@entriesCollection.remove { user: entry.user, year: entry.year }
 	
 	# Users
 	# upgrade user object with helper functions from this class
@@ -119,7 +134,7 @@ module.exports = class Data
 	
 	getUserData: (id, callback) ->
 		throw 'callback required' if not callback?
-		@usersCollection.findOne { id: id }, (err, user) -> callback err, user if not err?
+		@usersCollection.findOne { id: id }, (err, user) -> callback err, user
 	
 	updateUserData: (user) ->
 		@usersCollection.update { id: user.id }, { $set: user }, true, false

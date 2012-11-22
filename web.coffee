@@ -64,9 +64,18 @@ app.use (req, res, next) ->
 app.use (req, res, next) ->
 	if req.year?
 		data.getCompetition req.year, (err, competition) ->
-			res.locals.competition = competition
+			req.competition = res.locals.competition = competition
 			res.locals.competitionStates = lib.data.competitionStates
-			next(err)
+			next err
+	else
+		next()
+
+# make current entry info available for logged in users
+app.use (req, res, next) ->
+	if req.year? and req.user?
+		req.user.getCompetitionEntry req.competition, (err, entry) ->
+			req.competitionEntry = res.locals.competitionEntry = entry
+			next err
 	else
 		next()
 
@@ -97,19 +106,19 @@ app.get /^\/(\d{4})?\/?$/, (req, res) ->
 		res.redirect '/home'
 
 app.get '/login', (req, res) ->
-	returnUrl = req.param 'return'
+	returnUrl = req.query.return
 	accReturn = process.env.ACCRETURN ? "http://#{req.host}/login-return"
 	accReturn += "$return=#{returnUrl}" if returnUrl?
 	res.redirect accSso.getLoginUrl accReturn
 
 app.get '/logout', (req, res) ->
 	req.session.user = null
-	res.redirect (req.param 'return') ? '/'
+	res.redirect (req.query.return) ? '/'
 
 app.get '/login-return', (req, res, next) ->
 	req.session.user = null
 
-	accSso.processAuthenticationToken (req.param 'token'), (accErr, accUser) ->
+	accSso.processAuthenticationToken (req.query.token), (accErr, accUser) ->
 		if accErr?
 			next(accErr)
 		else
@@ -120,7 +129,7 @@ app.get '/login-return', (req, res, next) ->
 				else
 					delete user._id # no need to store the db ID in the session
 					req.session.user = user
-					res.redirect (req.param 'return') ? '/'
+					res.redirect (req.query.return) ? '/'
 
 app.get '/admin', (req, res) ->
 	if not req.session?.user?.isAdmin
@@ -172,16 +181,52 @@ app.get /^\/(?:\d{4}\/)?rules$/, (req, res) ->
 			title: 'SantaHack'
 
 # /participants
+app.get /^\/(?:\d{4}\/)?participants$/, (req, res) ->
+	if not req.needsYearRedirect()
+		res.render 'participants',
+			title: 'SantaHack'
+			participants: [
+				{ "avatar" : "2981.jpg", "id" : "2981", "isAdmin" : true, "name" : "BAF", "picture" : "2981.jpg" }
+				{ "avatar" : "2981.jpg", "id" : "2981", "isAdmin" : true, "name" : "BAF", "picture" : "2981.jpg" }
+				{ "avatar" : "2981.jpg", "id" : "2981", "isAdmin" : true, "name" : "BAF", "picture" : "2981.jpg" }
+			]
 
-# /join
+# /entry
+app.post /^\/(?:\d{4}\/)?entry$/, (req, res) ->
+	if not req.needsYearRedirect()
+		if req.body.join?
+			# join
+			data.saveCompetitionEntry
+				user: req.user.id
+				year: req.year
+			res.redirect res.locals.genLink '/wishlist'
+		else if req.body.withdrawConfirm?
+			data.removeCompetitionEntry req.competitionEntry
+			res.redirect res.locals.genLink '/'
+		else if req.body.cancel?
+			res.redirect res.locals.genLink '/wishlist'
 
 # /withdraw
+app.get /^\/(?:\d{4}\/)?withdraw$/, (req, res) ->
+	if not req.needsYearRedirect()
+		res.render 'withdraw',
+			title: 'SantaHack'
+
+# /withdraw-popup
+app.get /^\/(?:\d{4}\/)?withdraw-popup$/, (req, res) ->
+	if not req.needsYearRedirect()
+		res.render 'withdraw-popup',
+			title: 'SantaHack'
 
 # /wishlist
 app.get /^\/(?:\d{4}\/)?wishlist$/, (req, res) ->
 	if not req.needsYearRedirect()
 		res.render 'wishlist',
 			title: 'SantaHack'
+
+app.post /^\/(?:\d{4}\/)?wishlist$/, (req, res) ->
+	if not req.needsYearRedirect()
+		res.send '..'
 
 # /vote
 
@@ -213,7 +258,7 @@ app.get '/admin/getCompetition', (req, res) ->
 		res.json 401, { success: false, error: 'Unauthorized' }
 		return
 	
-	data.getCompetition parseInt(req.param 'year'), (err, comp) ->
+	data.getCompetition parseInt(req.query.year), (err, comp) ->
 		if err?
 			res.json 500, err
 		else
@@ -248,7 +293,7 @@ app.get '/admin/getNews', (req, res) ->
 		res.json 401, { success: false, error: 'Unauthorized' }
 		return
 	
-	data.getNews parseInt(req.param 'year'), 0, (err, news) ->
+	data.getNews parseInt(req.query.year), 0, (err, news) ->
 		if err?
 			res.json 500, err
 		else

@@ -1,0 +1,47 @@
+extends layout
+
+block additionalCSS
+	:stylus
+		#participants
+			margin 0 auto
+			width 700px
+
+			div.participant
+				float left
+				width 200px
+
+				border 2px solid #A33
+				background-color #CF8C8C
+				margin-top 0px
+				margin-left auto
+				margin-right 8px
+				margin-bottom 8px
+				padding 8px
+
+				img.avatar
+					float left
+					width 60px
+					height 60px
+
+				div.name
+					float left
+					width 116px
+					padding-left 8px
+
+					font-size 110%
+					color #fff
+
+					overflow auto
+					word-wrap break-word
+
+mixin participant(p)
+	.participant
+		img.avatar(src='http://static.allegro.cc/image/avatar/#{p.avatar}')
+		.name= p.name
+
+block content
+	h2 Participants #{year}
+	#participants
+		- each participant in participants
+			mixin participant(participant)
+	div(style='clear: both; height: 1px;')
