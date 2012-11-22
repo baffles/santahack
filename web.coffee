@@ -284,6 +284,7 @@ app.post '/admin/saveCompetition', (req, res) ->
 		entryCutoff: new Date req.body.entryCutoff
 		privateRelease: new Date req.body.privateRelease
 		publicRelease: new Date req.body.publicRelease
+		rules: req.body.rules
 	
 	data.saveCompetition competition
 	res.json { success: true }
