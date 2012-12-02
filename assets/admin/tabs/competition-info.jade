@@ -1,0 +1,61 @@
+#alertContainer
+	#validationAlert.alert.alert-error.hide
+		button.close(type='button') &times;</button>
+		span
+			strong Uh oh...
+			| please double check everything on the form!
+form#competitionForm.form-horizontal
+	fieldset
+		legend Competition Info
+		.control-group
+			label.control-label(for='regBegin') Registration Begins
+			.controls
+				input#regBegin.input-medium.date(type='text', placeholder='Registration Begins', data-type='date')
+				span.help-inline
+		.control-group
+			label.control-label(for='regEnd') Registration Ends
+			.controls
+				input#regEnd.input-medium(type='text', placeholder='Registration Ends', data-type='date')
+				span.help-inline
+		.control-group
+			label.control-label(for='voteBegin') Voting Begins
+			.controls
+				input#voteBegin.input-medium(type='text', placeholder='Voting Begins', data-type='date')
+				span.help-inline
+		.control-group
+			label.control-label(for='voteEnd') Voting Ends
+			.controls
+				input#voteEnd.input-medium(type='text', placeholder='Voting Ends', data-type='date')
+				span.help-inline
+		.control-group
+			label.control-label(for='devBegin') Development Begins
+			.controls
+				input#devBegin.input-medium(type='text', placeholder='Development Begins', data-type='date')
+				span.help-inline
+		.control-group
+			label.control-label(for='devEnd') Development Ends
+			.controls
+				input#devEnd.input-medium(type='text', placeholder='Development Ends', data-type='date')
+				span.help-inline
+		.control-group
+			label.control-label(for='entryCutoff') Entry Cutoff
+			.controls
+				input#entryCutoff.input-medium(type='text', placeholder='Entry Cutoff', data-type='date')
+				span.help-inline
+		.control-group
+			label.control-label(for='privRelease') Private Release
+			.controls
+				input#privRelease.input-medium(type='text', placeholder='Private Release', data-type='date')
+				span.help-inline
+		.control-group
+			label.control-label(for='pubRelease') Public Release
+			.controls
+				input#pubRelease.input-medium(type='text', placeholder='Public Release', data-type='date')
+				span.help-inline
+		.control-group
+			label.control-label(for='rules') Rules
+			.controls: textarea#rules.input-xxlarge(rows='10')
+		.control-group
+			.controls.btn-group
+				button.btn.btn-primary(name='save', data-saving-text='Saving...', data-saved-text='Saved', autocomplete='off') Save changes
+				button.btn(name='discard', data-discarding-text='Discarding...') Discard changes

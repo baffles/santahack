@@ -1,0 +1,116 @@
+extends layout
+
+block scripts
+	script(type='text/javascript', src='/static/js/wishlist.min.js')
+
+block content
+	if session.user == null
+		h2 Your Wishlist
+		p Please 
+			a(href='/login?return=' + returnURL) login
+			|  to view and edit your wishlist.
+	else if competition.getState().seq == competitionStates.Registration.seq
+		if competitionEntry == null
+			h2 Join SantaHack #{year}
+			p Would you like to join SantaHack and create a wishlist? Please review the 
+				a(href=genLink('/rules')) rules
+				|  if you're not familiar with them yet.
+			p
+				form#joinForm(method='POST', action=genLink('/entry'))
+					button.btn.btn-large.btn-success(name='join', data-joining-text='Joining...', autocomplete='off') Join!
+		else
+			h2 Your Wishlist
+			p Let us help you write your letter to Santa... just answer the short list of questions below, and we'll handle the rest!
+			p
+				form#withdrawForm(method='GET', action=genLink('/withdraw'))
+					button.btn.btn-small.btn-danger(type='submit', data-withdrawing-text='Withdrawing...', autocomplete='off') Withdraw
+			form#wishlistForm.form-horizontal(method='POST')
+				fieldset
+					legend Your Wishes
+					p Give us a few ideas of games you would like to play. Keep the guidelines from the 
+						a(href=genLink('/rules')) rules page
+						|  in mind.
+					.control-group
+						label.control-label(for='wish1') Wish 1
+						.controls
+							input.input-xxlarge(name='wish1', type='text', placeholder='Wish 1', value=formVals.wish1)
+							span.help-inline
+					.control-group
+						label.control-label(for='wish1') Wish 2
+						.controls
+							input.input-xxlarge(name='wish2', type='text', placeholder='Wish 2', value=formVals.wish2)
+							span.help-inline
+					.control-group
+						label.control-label(for='wish1') Wish 3
+						.controls
+							input.input-xxlarge(name='wish3', type='text', placeholder='Wish 3', value=formVals.wish3)
+							span.help-inline
+					
+					legend Your Machine
+					p What kind of computer do you use for gaming?
+					.control-group
+						label.control-label(for='machinePerformance') Performance
+						.controls
+							select(name='machinePerformance')
+								option(value='lowend', selected=formVals.machinePerformance == 'lowend') Low End
+								option(value='midrange', selected=formVals.machinePerformance == 'midrange') Mid-Range
+								option(value='highend', selected=formVals.machinePerformance == 'highend') High End
+					.control-group
+						label.control-label(for='preferredOS') Operating System
+						.controls
+							select(name='preferredOS')
+								option(value='windows', selected=formVals.preferredOS == 'windows') Microsoft&reg; Windows&reg;
+								option(value='linux', selected=formVals.preferredOS == 'linux') Linux
+								option(value='osx', selected=formVals.preferredOS == 'osx') Apple&reg; OS X&reg;
+			
+					legend Your Development Environment
+					p What platforms are you comfortable developing games for?
+					.control-group
+						.controls
+							label.checkbox(for='canDevWindows') 
+								input(name='canDevWindows', type='checkbox', checked=formVals.canDevWindows)
+								| Microsoft&reg; Windows&reg;
+							label.checkbox(for='canDevLinux') 
+								input(name='canDevLinux', type='checkbox', checked=formVals.canDevLinux)
+								| Linux
+							label.checkbox(for='canDevMac') 
+								input(name='canDevMac', type='checkbox', checked=formVals.canDevMac)
+								| Apple&reg; OS X&reg;
+					
+					.control-group
+						#wishlistButtons.controls.btn-group
+							button.btn.btn-primary(name='save', type='submit', data-saving-text='Saving...', data-saved-text='Saved', autocomplete='off') Save changes
+	else if competition.getState().seq > competitionStates.Registration.seq
+		h2 Your Wishlist
+		h3 Your Letter
+		p We mailed a letter to Santa with the wishlist you filled in. Here's what we said:
+		p You'd like an awesome new game for Christmas, and have three really cool ideas:
+		ul
+			li: strong Wish 1
+			li: strong Wish 2
+			li: strong Wish 3
+		p You have a 
+			strong Low/mid/high-end win/lin/mac
+			|  machine for playing games on.
+		p You're willing to help the elves by creating a game fulfilling someone else's wishes. You're comfortable developing for
+			strong Windows and Linux
+			| .
+		h3 Voting Results [shown after registration ends]
+		p We also held a vote to see how your game ideas fared among your peers.
+			|  [The results are still being collected and tallied, but here are the results so far:]|[Here are the results:]
+			ul
+				li
+					strong Wish 1
+					|  - 
+					span(style='color: red') 2
+					|  / 5
+				li
+					strong Wish 2
+					|  - 
+					span(style='color: green') 4
+					|  / 5
+				li
+					strong Wish 3
+					|  - 
+					span(style='color: green') 5
+					|  / 5

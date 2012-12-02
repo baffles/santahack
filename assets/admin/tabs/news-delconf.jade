@@ -1,0 +1,11 @@
+.modal.hide.fade(tabindex='-1', role='dialog', aria-labelledby='label', aria-hidden='true')
+	.modal-header
+		button.close(data-dismiss='modal', aria-hidden='true') &times;
+		h3#label Delete News Post
+	.modal-body Are you sure you want to delete the following news post?
+		h4#title
+		#preview.well
+	.modal-footer
+		.btn-group
+			button.btn(data-dismiss='modal', aria-hidden='true') Cancel
+			button#delButton.btn.btn-danger(data-deleting-text='Deleting...', data-deleted-text='Deleted!', autocomplete='off') Delete

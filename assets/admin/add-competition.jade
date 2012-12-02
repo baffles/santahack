@@ -1,0 +1,22 @@
+.modal.hide.fade(tabindex='-1', role='dialog', aria-labelledby='label', aria-hidden='true')
+	.modal-header
+		button.close(data-dismiss='modal', aria-hidden='true') &times;
+		h3#label Add Competition
+	.modal-body
+		#alertContainer
+			#validationAlert.alert.alert-error.hide
+				button.close(type='button') &times;</button>
+				span
+					strong Uh oh...</strong> 
+					| please double check everything on the form!
+		form#addCompetitionForm.form-horizontal
+			fieldset
+				.control-group
+					label.control-label(for='compYear') Date
+					.controls
+						input#compYear.input-medium(type='text', placeholder='Competition Year')
+						span.help-inline
+	.modal-footer
+		.btn-group
+			button.btn(data-dismiss='modal', aria-hidden='true') Close
+			button#saveButton.btn.btn-primary(data-adding-text='Adding...', data-added-text='Added!', autocomplete='off') Add

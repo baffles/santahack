@@ -1,0 +1,10 @@
+.modal(tabindex='-1', role='dialog', aria-labelledby='label')
+	.modal-header
+		button.close(data-dismiss='modal') &times;
+		h3#label Withdraw from SantaHack
+	.modal-body Are you sure you wish to withdraw from SantaHack? Your wishlist and related entry info will be deleted.
+	.modal-footer
+			.btn-group
+				form#withdrawForm(method='POST', action='entry', style='margin: 0;')
+					button.btn(data-dismiss='modal') Cancel
+					button#withdrawButton.btn.btn-danger(name='withdrawConfirm', data-withdrawing-text='Withdrawing...', autocomplete='off') Withdraw
