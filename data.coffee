@@ -1,3 +1,5 @@
+_ = require('underscore')._
+
 module.exports = class Data
 	@competitionStates:
 		Upcoming: { seq: 1, jsonDisplay: 'upcoming' }
@@ -99,7 +101,7 @@ module.exports = class Data
 		if entry?
 			entry.isWishlistComplete = () ->
 				entry.wishlist? and
-				entry.wishlist.wishes?.length == 3 and entry.wishlist.each (wish) -> wish.length > 0 and
+				entry.wishlist.wishes?.length == 3 and _(entry.wishlist.wishes).all((wish) -> wish.length > 0) and
 				entry.wishlist.machinePerformance?.length > 0 and entry.wishlist.preferredOS?.length > 0 and
 				entry.wishlist.canDev?.length > 0
 		entry
@@ -117,6 +119,17 @@ module.exports = class Data
 		@entriesCollection.find({ user: user.id }).toArray (err, entries) => callback err, entries.map (entry) => @upgradeEntry entry
 	
 	saveCompetitionEntry: (entry) ->
+		# clean up entry
+		entry = 
+			user: entry.user
+			year: entry.year
+			wishlist: entry.wishlist
+			isEligible: entry.isEligible
+			votes: entry.votes
+			assignment: entry.assignment
+			log: entry.log
+			submission: entry.submission
+		
 		if entry.user? and entry.year?
 			@entriesCollection.update { user: entry.user, year: entry.year }, { $set: entry }, true, false
 	

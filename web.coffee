@@ -5,8 +5,11 @@ lib =
 	mongolian: require 'mongolian'
 	mongoStore: require 'connect-mongo'
 	moment: require 'moment'
+	underscore: require 'underscore'
 	accSso: require './acc-sso'
 	data: require './data'
+
+_ = lib.underscore._
 
 db = if process.env.MONGOHQ_URL? then new lib.mongolian process.env.MONGOHQ_URL else new lib.mongolian().db 'test'
 
@@ -23,6 +26,14 @@ app.use lib.express.favicon "#{__dirname}/public/images/favicon.ico"
 app.use lib.compiler
 	enabled: [ 'coffee', 'stylus', 'uglify', 'jade' ]
 	src: 'assets'
+	dest: 'assets/compiled'
+	mount: '/static'
+	options:
+		stylus: { compress: true }
+		jade: { pretty: false }
+app.use lib.compiler
+	enabled: [ 'uglify' ]
+	src: [ 'assets', 'assets/compiled' ]
 	dest: 'assets/compiled'
 	mount: '/static'
 app.use '/static', lib.express.static "#{__dirname}/public"
@@ -78,6 +89,13 @@ app.use (req, res, next) ->
 			next err
 	else
 		next()
+
+# set warning messages for the user
+app.use (req, res, next) ->
+	if req.competition?.getState() == lib.data.competitionStates.Registration && req.competitionEntry? && !req.competitionEntry.isWishlistComplete()
+		res.locals.warnMsg = 'It looks like your wishlist is incomplete. Please complete it in time to ensure you are allowed to participate!'
+		res.locals.showWarnMsg = true
+	next()
 
 app.use app.router
 
@@ -170,7 +188,7 @@ app.get /^\/(?:\d{4}\/)?home$/, (req, res, next) ->
 app.get /^\/(?:\d{4}\/)?years$/, (req, res) ->
 	if not req.needsYearRedirect()
 		#data.getCompetition req.year, (err, competition) ->
-			res.send res.locals.competition.getState()
+			res.send req.competition.getState()
 	#	competitionHelper.getCompetitionList (err, years) ->
 			#res.send JSON.stringify years
 
@@ -212,36 +230,75 @@ app.get /^\/(?:\d{4}\/)?withdraw$/, (req, res) ->
 		res.render 'withdraw',
 			title: 'SantaHack'
 
-# /withdraw-popup
-app.get /^\/(?:\d{4}\/)?withdraw-popup$/, (req, res) ->
-	if not req.needsYearRedirect()
-		res.render 'withdraw-popup',
-			title: 'SantaHack'
-
 # /wishlist
 app.get /^\/(?:\d{4}\/)?wishlist$/, (req, res) ->
 	if not req.needsYearRedirect()
+		entry = req.competitionEntry
 		res.render 'wishlist',
-			title: 'SantaHack'
+			title: 'SantaHack',
+			formVals: getWishlistFormVals req.competitionEntry
+			showWarnMsg: req.competition.getState() != lib.data.competitionStates.Registration
+
+app.get /^\/(?:\d{4}\/)?wishlist.json$/, (req, res) ->
+	if not req.needsYearRedirect()
+		res.send getWishlistFormVals req.competitionEntry
+
+getWishlistFormVals = (entry) ->
+	{
+		wish1: entry?.wishlist?.wishes[0]
+		wish2: entry?.wishlist?.wishes[1]
+		wish3: entry?.wishlist?.wishes[2]
+		machinePerformance: entry?.wishlist?.machinePerformance
+		preferredOS: entry?.wishlist?.preferredOS
+		canDevWindows: (entry?.wishlist?.canDev?.indexOf('windows') ? -1) >= 0
+		canDevLinux: (entry?.wishlist?.canDev?.indexOf('linux') ? -1) >= 0
+		canDevMac: (entry?.wishlist?.canDev?.indexOf('mac') ? -1) >= 0
+	}
 
 app.post /^\/(?:\d{4}\/)?wishlist$/, (req, res) ->
 	if not req.needsYearRedirect()
-		res.send '..'
+		if req.competition.getState() == lib.data.competitionStates.Registration
+			entry = req.competitionEntry
+			entry.wishlist = 
+				wishes: [ req.body.wish1, req.body.wish2, req.body.wish3 ]
+				machinePerformance: req.body.machinePerformance
+				preferredOS: req.body.preferredOS
+				canDev: [ ]
+			entry.wishlist.canDev.push 'windows' if req.body.canDevWindows?
+			entry.wishlist.canDev.push 'linux' if req.body.canDevLinux?
+			entry.wishlist.canDev.push 'mac' if req.body.canDevMac?
+		
+			data.saveCompetitionEntry entry
+		
+			if req.body.json?
+				res.json { success: true }
+			else
+				res.redirect res.locals.genLink '/wishlist'
+		else
+			if req.body.json?
+				res.json { success: false, error: 'Competition not in registration.' }
+			else
+				res.redirect res.locals.genLink '/wishlist'
 
 # /vote
+#todo now
 
 # /task
+#todo later
 
 # /submit
+#todo later
 
 # /gift
+#todo now [for 2011]
 
 # /downloads
+#todo now [for 2011]
 
-#! add log page
+#! add logging facility
 
 # admin functions
-#add auth checking! and maybe check errors from DB on updates/saves
+# should do better w/ check errors from DB on updates/saves
 app.get '/admin/getCompetitionList', (req, res) ->
 	if not req.session?.user?.isAdmin
 		res.json 401, { success: false, error: 'Unauthorized' }
