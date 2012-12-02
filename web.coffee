@@ -6,6 +6,7 @@ lib =
 	mongoStore: require 'connect-mongo'
 	moment: require 'moment'
 	underscore: require 'underscore'
+	seq: require 'seq'
 	accSso: require './acc-sso'
 	data: require './data'
 
@@ -183,7 +184,7 @@ app.get /^\/(?:\d{4}\/)?home$/, (req, res, next) ->
 	if not req.needsYearRedirect()
 		data.getNews req.year, 5, (err, news) ->
 			if err?
-				next(err)
+				next err
 			else
 				res.render 'home',
 					title: 'SantaHack'
@@ -203,15 +204,18 @@ app.get /^\/(?:\d{4}\/)?rules$/, (req, res) ->
 			title: 'SantaHack'
 
 # /participants
-app.get /^\/(?:\d{4}\/)?participants$/, (req, res) ->
+app.get /^\/(?:\d{4}\/)?participants$/, (req, res, next) ->
 	if not req.needsYearRedirect()
-		res.render 'participants',
-			title: 'SantaHack'
-			participants: [
-				{ "avatar" : "2981.jpg", "id" : "2981", "isAdmin" : true, "name" : "BAF", "picture" : "2981.jpg" }
-				{ "avatar" : "2981.jpg", "id" : "2981", "isAdmin" : true, "name" : "BAF", "picture" : "2981.jpg" }
-				{ "avatar" : "2981.jpg", "id" : "2981", "isAdmin" : true, "name" : "BAF", "picture" : "2981.jpg" }
-			]
+		lib.seq()
+			.seq(() -> data.getCompetitionEntries req.competition, this)
+			.flatten()
+			.parMap((entry) -> data.getUserData entry.user, this)
+			.unflatten()
+			.seq((participants) ->
+				res.render 'participants',
+					title: 'SantaHack'
+					participants: participants
+			)
 
 # /entry
 app.post /^\/(?:\d{4}\/)?entry$/, (req, res) ->
