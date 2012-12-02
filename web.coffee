@@ -23,7 +23,7 @@ app.set 'view engine', 'jade'
 
 app.use lib.express.favicon "#{__dirname}/public/images/favicon.ico"
 
-compiledFolder = if app.settings.env = 'development' then "#{__dirname}/assets/compiled" else "#{__dirname}/tmp/#{process.pid}/assets/compiled"
+compiledFolder = if app.settings.env == 'development' then "#{__dirname}/assets/compiled" else "#{__dirname}/tmp/#{process.pid}/assets/compiled"
 console.log "Storing compiled assets in #{compiledFolder}"
 
 app.use lib.compiler
@@ -389,4 +389,4 @@ app.post '/admin/deleteNews', (req, res) ->
 	res.json { success: true }
 
 app.listen process.env.PORT
-console.log "Express server at http://localhost:%d/ in %s mode", process.env.PORT, process.env.NODE_ENV #app.settings.env
+console.log "Express server at http://localhost:#{process.env.PORT}/ in #{process.env.NODE_ENV} mode" # printing app.settings.env doesn't work, wtf?
