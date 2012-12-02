@@ -23,21 +23,24 @@ app.set 'view engine', 'jade'
 
 app.use lib.express.favicon "#{__dirname}/public/images/favicon.ico"
 
+compiledFolder = if app.settings.env = 'development' then "#{__dirname}/assets/compiled" else "#{__dirname}/tmp/#{process.pid}/assets/compiled"
+console.log "Storing compiled assets in #{compiledFolder}"
+
 app.use lib.compiler
 	enabled: [ 'coffee', 'stylus', 'uglify', 'jade' ]
 	src: 'assets'
-	dest: 'assets/compiled'
+	dest: compiledFolder
 	mount: '/static'
 	options:
 		stylus: { compress: true }
 		jade: { pretty: false }
 app.use lib.compiler
 	enabled: [ 'uglify' ]
-	src: [ 'assets', 'assets/compiled' ]
-	dest: 'assets/compiled'
+	src: [ 'assets', compiledFolder ]
+	dest: compiledFolder
 	mount: '/static'
 app.use '/static', lib.express.static "#{__dirname}/public"
-app.use '/static', lib.express.static "#{__dirname}/assets/compiled"
+app.use '/static', lib.express.static compiledFolder
 
 app.use lib.express.cookieParser()
 
