@@ -23,24 +23,25 @@ app.set 'view engine', 'jade'
 
 app.use lib.express.favicon "#{__dirname}/public/images/favicon.ico"
 
-compiledFolder = if app.settings.env == 'development' then "#{__dirname}/assets/compiled" else "#{__dirname}/tmp/#{process.pid}/assets/compiled"
-console.log "Storing compiled assets in #{compiledFolder}"
-
+#if app.settings.env == 'development'
+#	console.log 'Compiling assets on-the-fly.'
 app.use lib.compiler
 	enabled: [ 'coffee', 'stylus', 'uglify', 'jade' ]
 	src: 'assets'
-	dest: compiledFolder
+	dest: 'assets/compiled'
 	mount: '/static'
 	options:
 		stylus: { compress: true }
 		jade: { pretty: false }
 app.use lib.compiler
 	enabled: [ 'uglify' ]
-	src: [ 'assets', compiledFolder ]
-	dest: compiledFolder
+	src: [ 'assets', 'assets/compiled' ]
+	dest: 'assets/compiled'
 	mount: '/static'
+#else
+#	console.log "Using pre-compiled assets in #{__dirname}/assets/compiled; regenerate with `cake build:assets`"
 app.use '/static', lib.express.static "#{__dirname}/public"
-app.use '/static', lib.express.static compiledFolder
+app.use '/static', lib.express.static "#{__dirname}/assets/compiled"
 
 app.use lib.express.cookieParser()
 

@@ -10,11 +10,16 @@
 		"jade": "0.27.x",
 		"connect-compiler": "0.1.x",
 		"stylus": "0.31.x",
-		"uglify-js": "2.2.x",
+		"uglify-js": "1.3.x",
 		"marked": "0.2.x",
 		"moment": "1.7.x",
 		"xml2js": "0.2.x",
 		"underscore": "1.4.x"
+	},
+	"devDependencies":
+	{
+		"file": "0.1.x",
+		"wrench": "1.4.x"
 	},
 	"engines":
 	{
