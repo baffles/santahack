@@ -45,9 +45,9 @@ class CompetitionInfoTab extends Tab
 
 			# enable tab in rules textbox (for markdown)
 			$(document).delegate '#competitionForm #rules', 'keydown', (e) ->
-				keyCode = e.keyCode || e.which;
+				keyCode = e.keyCode or e.which;
 
-				if keyCode == 9
+				if keyCode isnt 9
 					e.preventDefault();
 					start = $(this).get(0).selectionStart;
 					end = $(this).get(0).selectionEnd;

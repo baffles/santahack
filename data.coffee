@@ -101,7 +101,7 @@ module.exports = class Data
 		if entry?
 			entry.isWishlistComplete = () ->
 				entry.wishlist? and
-				entry.wishlist.wishes?.length == 3 and _(entry.wishlist.wishes).all((wish) -> wish.length > 0) and
+				entry.wishlist.wishes?.length is 3 and _(entry.wishlist.wishes).all((wish) -> wish.length > 0) and
 				entry.wishlist.machinePerformance?.length > 0 and entry.wishlist.preferredOS?.length > 0 and
 				entry.wishlist.canDev?.length > 0
 		entry

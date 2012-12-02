@@ -24,7 +24,7 @@ app.set 'view engine', 'jade'
 
 app.use lib.express.favicon "#{__dirname}/public/images/favicon.ico"
 
-#if app.settings.env == 'development'
+#if app.settings.env is 'development'
 #	console.log 'Compiling assets on-the-fly.'
 app.use lib.compiler
 	enabled: [ 'coffee', 'stylus', 'uglify', 'jade' ]
@@ -97,7 +97,7 @@ app.use (req, res, next) ->
 
 # set warning messages for the user
 app.use (req, res, next) ->
-	if req.competition?.getState() == lib.data.competitionStates.Registration && req.competitionEntry? && !req.competitionEntry.isWishlistComplete()
+	if req.competition?.getState() is lib.data.competitionStates.Registration and req.competitionEntry? and !req.competitionEntry.isWishlistComplete()
 		res.locals.warnMsg = 'It looks like your wishlist is incomplete. Please complete it in time to ensure you are allowed to participate!'
 		res.locals.showWarnMsg = true
 	next()
@@ -245,7 +245,7 @@ app.get /^\/(?:\d{4}\/)?wishlist$/, (req, res) ->
 		res.render 'wishlist',
 			title: 'SantaHack',
 			formVals: getWishlistFormVals req.competitionEntry
-			showWarnMsg: req.competition.getState() != lib.data.competitionStates.Registration
+			showWarnMsg: req.competition.getState() isnt lib.data.competitionStates.Registration
 
 app.get /^\/(?:\d{4}\/)?wishlist.json$/, (req, res) ->
 	if not req.needsYearRedirect()
@@ -265,7 +265,7 @@ getWishlistFormVals = (entry) ->
 
 app.post /^\/(?:\d{4}\/)?wishlist$/, (req, res) ->
 	if not req.needsYearRedirect()
-		if req.competition.getState() == lib.data.competitionStates.Registration
+		if req.competition.getState() is lib.data.competitionStates.Registration
 			entry = req.competitionEntry
 			entry.wishlist = 
 				wishes: [ req.body.wish1, req.body.wish2, req.body.wish3 ]
