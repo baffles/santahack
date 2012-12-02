@@ -42,6 +42,9 @@ mixin participant(p)
 block content
 	h2 Participants #{year}
 	#participants
-		- each participant in participants
-			mixin participant(participant)
+		if participants.length > 0
+			- each participant in participants
+				mixin participant(participant)
+		else
+			p No participants yet.
 	div(style='clear: both; height: 1px;')
