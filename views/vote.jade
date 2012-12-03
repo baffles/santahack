@@ -1,0 +1,19 @@
+extends layout
+
+block scripts
+	script(type='text/javascript', src='/static/js/wishlist.min.js')
+
+block content
+	h2 Voting
+	if session.user == null
+		p Please 
+			a(href='/login?return=' + returnURL) login
+			|  to vote.
+	else if competition.getState() == competitionStates.Voting
+		if competitionEntry == null
+			p You did not join and submit a complete wishlist for SantaHack #{year}, so you are not eligible for voting.
+		else
+			for item in voteItems
+				p Vote for #{item.id}: #{item.wishText} -- existing score #{item.score == null ? 'null' : item.score}
+	else
+		p Voting for SantaHack #{year} is not currently in progress.

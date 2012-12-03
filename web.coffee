@@ -9,6 +9,7 @@ lib =
 	seq: require 'seq'
 	accSso: require './acc-sso'
 	data: require './data'
+	voteID: require './vote-id'
 
 _ = lib.underscore._
 
@@ -16,6 +17,7 @@ db = if process.env.MONGOHQ_URL? then new lib.mongolian process.env.MONGOHQ_URL 
 
 accSso = new lib.accSso
 data = new lib.data db
+voteID = new lib.voteID 'aes256', 'santas shack hack'
 
 app = lib.express()
 
@@ -61,9 +63,11 @@ app.use (req, res, next) ->
 	res.locals.genLink = (path) -> "/#{req.year}#{path}"
 	req.needsYearRedirect = () ->
 		if not req.year?
-			data.getDefaultYear (err, year) ->
-				throw err if err
-				res.redirect "/#{year}#{req.path}"
+			lib.seq()
+				.seq(() -> data.getDefaultYear this)
+				.seq((defaultYear) ->
+					res.redirect "/#{defaultYear}#{req.path}"
+				).catch((err) -> next err)
 			return true
 		else
 			return false
@@ -79,19 +83,25 @@ app.use (req, res, next) ->
 # query for and make competition data available to templates
 app.use (req, res, next) ->
 	if req.year?
-		data.getCompetition req.year, (err, competition) ->
-			req.competition = res.locals.competition = competition
-			res.locals.competitionStates = lib.data.competitionStates
-			next err
+		lib.seq()
+			.seq(() -> data.getCompetition req.year, this)
+			.seq((competition) ->
+				req.competition = res.locals.competition = competition
+				res.locals.competitionStates = lib.data.competitionStates
+				next()
+			).catch((err) -> next err)
 	else
 		next()
 
 # make current entry info available for logged in users
 app.use (req, res, next) ->
 	if req.year? and req.user?
-		req.user.getCompetitionEntry req.competition, (err, entry) ->
-			req.competitionEntry = res.locals.competitionEntry = entry
-			next err
+		lib.seq()
+			.seq(() -> req.user.getCompetitionEntry req.competition, this)
+			.seq((entry) ->
+				req.competitionEntry = res.locals.competitionEntry = entry
+				next()
+			).catch((err) -> next err)
 	else
 		next()
 
@@ -289,7 +299,19 @@ app.post /^\/(?:\d{4}\/)?wishlist$/, (req, res) ->
 				res.redirect res.locals.genLink '/wishlist'
 
 # /vote
-#todo now
+app.get /^\/(?:\d{4}\/)?vote$/, (req, res, next) ->
+	if not req.needsYearRedirect()
+		lib.seq()
+			.seq(() -> req.competitionEntry.getVoteItems this)
+			.seq((voteItems) ->
+				# {"destUser":"2982","wish":"wish0","wishText":"wish 1","score":null}
+				voteItems = voteItems.map (item) -> { id: voteID.toID(item), wishText: item.wishText, score: item.score }
+				
+				res.render 'vote',
+					title: 'SantaHack'
+					voteItems: _.shuffle voteItems
+					showWarnMsg: req.competition.getState() isnt lib.data.competitionStates.Voting
+			).catch((err) -> next err)
 
 # /task
 #todo later
