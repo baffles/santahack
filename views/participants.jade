@@ -2,49 +2,46 @@ extends layout
 
 block additionalCSS
 	:stylus
-		#participants
-			margin 0 auto
-			width 700px
+		.participants
+			width 100%
+		
+		.participant
+			border 2px solid #A33
+			background-color #CF8C8C
+			padding 8px
 
-			div.participant
+			img.avatar
 				float left
-				width 200px
+				width 60px
+				height 60px
 
-				border 2px solid #A33
-				background-color #CF8C8C
-				margin-top 0px
-				margin-left auto
-				margin-right 8px
-				margin-bottom 8px
-				padding 8px
+			div.name
+				float left
+				width 116px
+				padding-left 8px
 
-				img.avatar
-					float left
-					width 60px
-					height 60px
+				font-size 110%
+				color #fff
 
-				div.name
-					float left
-					width 116px
-					padding-left 8px
-
-					font-size 110%
-					color #fff
-
-					overflow auto
-					word-wrap break-word
+				overflow auto
+				word-wrap break-word
 
 mixin participant(p)
-	.participant
+	.span4.participant
 		img.avatar(src='http://static.allegro.cc/image/avatar/#{p.avatar}')
 		.name= p.name
 
 block content
-	h2 Participants #{year}
-	#participants
-		if participants.length > 0
-			- each participant in participants
-				mixin participant(participant)
-		else
-			p No participants yet.
+	h2 Participants #{year}	
+	if participants.length > 0
+		.container.participants
+			- for (var row = 0; row < participants / 3; row++)
+			- {
+				- var participantsRow = participants.slice(row * 3, row * 3 + 3)
+				.row-fluid
+					- for participant in participantsRow
+						mixin participant(participant)
+			- }
+	else
+		p No participants yet.
 	div(style='clear: both; height: 1px;')

@@ -103,21 +103,16 @@ block content
 					else
 						| Here are the results:
 					ul
-						li
-							strong Wish 1
-							|  - 
-							span(style='color: red') 2
-							|  / 5
-						li
-							strong Wish 2
-							|  - 
-							span(style='color: green') 4
-							|  / 5
-						li
-							strong Wish 3
-							|  - 
-							span(style='color: green') 5
-							|  / 5
+						for wish, idx in competitionEntry.wishlist.wishes
+							li
+								- var wishScore = competitionEntry.wishlist.votes != null && competitionEntry.wishlist.votes[idx] != null ? competitionEntry.wishlist.votes[idx].score / competitionEntry.wishlist.votes[idx].count : null
+								strong= competitionEntry.wishlist.wishes[idx]
+								|  - 
+								if wishScore != null
+									span(style='color: #{wishScore > 2.5 ? "green" : "red"}')= wishScore
+									|  / 5
+								else
+									| No votes yet
 				if competition.getState().seq < competitionStates.VotingIntermission.seq
 					h3 Withdraw
 					p You may still withdraw from the competition if you don't plan to participate. If you withdraw, beware that it's too late to re-join.
