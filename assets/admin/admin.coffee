@@ -92,10 +92,11 @@ Admin = new class
 						tabindex: -1
 					)
 					
-					((year) => $a.click (e) =>
-						e.preventDefault()
-						@selectYear year
-					)(year)
+					do =>
+						thisYear = year
+						$a.click (e) =>
+							e.preventDefault()
+							@selectYear thisYear
 				
 				$compoMenu.append $('<li>').addClass('divider')
 				$compoMenu.append $('<li>').append($addLink = $('<a>').text('Add Competition').attr

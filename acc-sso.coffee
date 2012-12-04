@@ -20,7 +20,7 @@ module.exports = class AccSso
 				response.on 'end', () ->
 					parser = new lib.xml2js.Parser()
 					parser.addListener 'end', (loginInfo) ->
-						if loginInfo.response.$.valid == 'true'
+						if loginInfo.response.$.valid is 'true'
 							user =
 								id: loginInfo.response.member[0].$.id
 								name: loginInfo.response.member[0].name[0]

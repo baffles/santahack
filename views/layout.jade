@@ -3,13 +3,13 @@ html
 	head
 		title= title
 		link(rel='stylesheet', href='/static/css/style.css')
-		link(rel='stylesheet', href='/static/lib/bootstrap_cust/css/bootstrap.min.css', media='screen')
+		link(rel='stylesheet', href='/static/lib/bootstrap_sh/css/bootstrap.min.css', media='screen')
 		link(rel='shortcut icon', href='/static/images/favicon.ico')
 		
 		block additionalCSS
 		
 		script(type='text/javascript', src='//ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js')
-		script(type='text/javascript', src='/static/lib/bootstrap_cust/js/bootstrap.min.js')
+		script(type='text/javascript', src='/static/lib/bootstrap_sh/js/bootstrap.min.js')
 		
 		block scripts
 	body
@@ -21,14 +21,15 @@ html
 					- var compSeq = competition.getState().seq
 					li: a(href=genLink('/home')) Home
 					li: a(href=genLink('/rules')) Rules
-					//- participants is only shown for competitions 
-					//- need to add some sort of preferences page or something with join/withdraw competition links
-					if session.user != null && compSeq == competitionStates.Registration.seq
-						li: a(href=genLink('/wishlist')) Wishlist
-					if compSeq > competitionStates.Upcoming.seq
+					if compSeq >= competitionStates.Registration.seq
 						li: a(href=genLink('/participants')) Participants
-					if compSeq >= competitionStates.ReleasePublic.seq
-						li: a(href=genLink('/downloads')) Downloads
+						if compSeq >= competitionStates.ReleasePublic.seq
+							li: a(href=genLink('/downloads')) Downloads
+						if session.user != null
+							li: a(href=genLink('/wishlist')) Wishlist
+					if typeof competitionEntry !== 'undefined' && competitionEntry != null && competitionEntry.isWishlistComplete() && compSeq == competitionStates.Voting.seq
+						li: a(href=genLink('/vote')) Voting
+					// your task, blog, submit gift, your gift
 					//- add the isLoggedIn and in competition stuff after (see above)
 			if typeof(warnMsg) !== 'undefined' && warnMsg != null && showWarnMsg
 				#alertContainer
@@ -36,6 +37,7 @@ html
 						button.close(type='button', data-dismiss='alert') &times;</button>
 						span
 							strong Uh oh...
+							|  
 							=warnMsg
 			#user
 				if session.user != null

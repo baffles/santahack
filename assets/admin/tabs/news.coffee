@@ -58,9 +58,9 @@ class NewsTab extends Tab
 
 			# enable tab in content textbox (for markdown)
 			$popup.delegate '#newsPost', 'keydown', (e) ->
-				keyCode = e.keyCode || e.which;
+				keyCode = e.keyCode or e.which;
 
-				if keyCode == 9
+				if keyCode is 9
 					e.preventDefault();
 					start = $(this).get(0).selectionStart;
 					end = $(this).get(0).selectionEnd;
@@ -80,7 +80,7 @@ class NewsTab extends Tab
 				$saveButton.button 'saving'
 
 				# need all values entered
-				if $newsDate.val().length == 0 or $newsTitle.val().length == 0 or $newsPost.val().length == 0 or $('#editNewsForm .error', $popup).length > 0
+				if $newsDate.val().length is 0 or $newsTitle.val().length is 0 or $newsPost.val().length is 0 or $('#editNewsForm .error', $popup).length > 0
 					$validationAlert.slideDown 'fast'
 					$saveButton.button 'reset'
 					return

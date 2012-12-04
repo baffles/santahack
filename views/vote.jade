@@ -1,0 +1,49 @@
+extends layout
+
+block scripts
+	script(type='text/javascript', src='/static/js/vote.min.js')
+
+block content
+	h2 Voting
+	if session.user == null
+		p Please 
+			a(href='/login?return=' + returnURL) login
+			|  to vote.
+	else if competition.getState() == competitionStates.Voting
+		if competitionEntry == null || !competitionEntry.isWishlistComplete()
+			p You did not join and submit a complete wishlist for SantaHack #{year}, so you are not eligible for voting.
+		else
+			p Please vote on the following game ideas. 
+				strong Keep the scoring guidelines from the 
+					a(href=genLink('/rules')) rules
+					|  in mind.
+				|  Recall that you must vote on at least 
+				strong half
+				|  of these ideas.
+			form#voteForm(method='POST')
+				fieldset
+					table.table.table-hover.table-condensed
+						thead
+							tr
+								th Wish
+								th 1
+								th 2
+								th 3
+								th 4
+								th 5
+								th.hide.status-column
+						tbody
+							for item in voteItems
+								tr
+									td= item.wishText
+									td: input(type='radio', name=item.id, value=1, title='Awful idea', checked=item.score == 1)
+									td: input(type='radio', name=item.id, value=2, title='Bad idea', checked=item.score == 2)
+									td: input(type='radio', name=item.id, value=3, title='Average idea', checked=item.score == 3)
+									td: input(type='radio', name=item.id, value=4, title='Good idea', checked=item.score == 4)
+									td: input(type='radio', name=item.id, value=5, title='Awesome idea', checked=item.score == 5)
+									td.hide.status-column: i(id="icon_#{item.id}").icon-ok
+					
+					.btn-group#manualButtons
+						button.btn.btn-primary(type='submit') Save
+	else
+		p Voting for SantaHack #{year} is not currently in progress.

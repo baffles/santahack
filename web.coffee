@@ -9,6 +9,7 @@ lib =
 	seq: require 'seq'
 	accSso: require './acc-sso'
 	data: require './data'
+	voteID: require './vote-id'
 
 _ = lib.underscore._
 
@@ -16,6 +17,7 @@ db = if process.env.MONGOHQ_URL? then new lib.mongolian process.env.MONGOHQ_URL 
 
 accSso = new lib.accSso
 data = new lib.data db
+voteID = new lib.voteID 'aes256', 'santas shack hack'
 
 app = lib.express()
 
@@ -24,8 +26,6 @@ app.set 'view engine', 'jade'
 
 app.use lib.express.favicon "#{__dirname}/public/images/favicon.ico"
 
-#if app.settings.env == 'development'
-#	console.log 'Compiling assets on-the-fly.'
 app.use lib.compiler
 	enabled: [ 'coffee', 'stylus', 'uglify', 'jade' ]
 	src: 'assets'
@@ -39,8 +39,6 @@ app.use lib.compiler
 	src: [ 'assets', 'assets/compiled' ]
 	dest: 'assets/compiled'
 	mount: '/static'
-#else
-#	console.log "Using pre-compiled assets in #{__dirname}/assets/compiled; regenerate with `cake build:assets`"
 app.use '/static', lib.express.static "#{__dirname}/public"
 app.use '/static', lib.express.static "#{__dirname}/assets/compiled"
 
@@ -61,9 +59,11 @@ app.use (req, res, next) ->
 	res.locals.genLink = (path) -> "/#{req.year}#{path}"
 	req.needsYearRedirect = () ->
 		if not req.year?
-			data.getDefaultYear (err, year) ->
-				throw err if err
-				res.redirect "/#{year}#{req.path}"
+			lib.seq()
+				.seq(() -> data.getDefaultYear this)
+				.seq((defaultYear) ->
+					res.redirect "/#{defaultYear}#{req.path}"
+				).catch((err) -> next err)
 			return true
 		else
 			return false
@@ -79,26 +79,35 @@ app.use (req, res, next) ->
 # query for and make competition data available to templates
 app.use (req, res, next) ->
 	if req.year?
-		data.getCompetition req.year, (err, competition) ->
-			req.competition = res.locals.competition = competition
-			res.locals.competitionStates = lib.data.competitionStates
-			next err
+		lib.seq()
+			.seq(() -> data.getCompetition req.year, this)
+			.seq((competition) ->
+				req.competition = res.locals.competition = competition
+				res.locals.competitionStates = lib.data.competitionStates
+				next()
+			).catch((err) -> next err)
 	else
 		next()
 
 # make current entry info available for logged in users
 app.use (req, res, next) ->
 	if req.year? and req.user?
-		req.user.getCompetitionEntry req.competition, (err, entry) ->
-			req.competitionEntry = res.locals.competitionEntry = entry
-			next err
+		lib.seq()
+			.seq(() -> req.user.getCompetitionEntry req.competition, this)
+			.seq((entry) ->
+				req.competitionEntry = res.locals.competitionEntry = entry
+				next()
+			).catch((err) -> next err)
 	else
 		next()
 
 # set warning messages for the user
 app.use (req, res, next) ->
-	if req.competition?.getState() == lib.data.competitionStates.Registration && req.competitionEntry? && !req.competitionEntry.isWishlistComplete()
+	if req.competition?.getState() is lib.data.competitionStates.Registration and req.competitionEntry? and not req.competitionEntry.isWishlistComplete()
 		res.locals.warnMsg = 'It looks like your wishlist is incomplete. Please complete it in time to ensure you are allowed to participate!'
+		res.locals.showWarnMsg = true
+	else if req.competition?.getState() is lib.data.competitionStates.Voting and req.competitionEntry?.isWishlistComplete() and not req.competitionEntry.hasVoted
+		res.locals.warnMsg = 'It looks like you haven\'t voted on at least half of the descriptions yet. Please submit your votes in time to ensure you are eligible!'
 		res.locals.showWarnMsg = true
 	next()
 
@@ -245,7 +254,7 @@ app.get /^\/(?:\d{4}\/)?wishlist$/, (req, res) ->
 		res.render 'wishlist',
 			title: 'SantaHack',
 			formVals: getWishlistFormVals req.competitionEntry
-			showWarnMsg: req.competition.getState() != lib.data.competitionStates.Registration
+			showWarnMsg: req.competition.getState() isnt lib.data.competitionStates.Registration
 
 app.get /^\/(?:\d{4}\/)?wishlist.json$/, (req, res) ->
 	if not req.needsYearRedirect()
@@ -265,7 +274,7 @@ getWishlistFormVals = (entry) ->
 
 app.post /^\/(?:\d{4}\/)?wishlist$/, (req, res) ->
 	if not req.needsYearRedirect()
-		if req.competition.getState() == lib.data.competitionStates.Registration
+		if req.competition.getState() is lib.data.competitionStates.Registration
 			entry = req.competitionEntry
 			entry.wishlist = 
 				wishes: [ req.body.wish1, req.body.wish2, req.body.wish3 ]
@@ -275,6 +284,8 @@ app.post /^\/(?:\d{4}\/)?wishlist$/, (req, res) ->
 			entry.wishlist.canDev.push 'windows' if req.body.canDevWindows?
 			entry.wishlist.canDev.push 'linux' if req.body.canDevLinux?
 			entry.wishlist.canDev.push 'mac' if req.body.canDevMac?
+			
+			entry.wishlist.isComplete = entry.checkWishlist()
 		
 			data.saveCompetitionEntry entry
 		
@@ -289,7 +300,42 @@ app.post /^\/(?:\d{4}\/)?wishlist$/, (req, res) ->
 				res.redirect res.locals.genLink '/wishlist'
 
 # /vote
-#todo now
+app.get /^\/(?:\d{4}\/)?vote$/, (req, res, next) ->
+	if not req.needsYearRedirect()
+		lib.seq()
+			.seq_((seq) -> (req.competitionEntry?.getVoteItems seq) or seq())
+			.seq((voteItems) ->
+				voteItems = voteItems?.map (item) -> { id: voteID.toID(item), wishText: item.wishText, score: item.score }
+				
+				res.render 'vote',
+					title: 'SantaHack'
+					voteItems: _.shuffle voteItems
+					showWarnMsg: req.competition.getState() isnt lib.data.competitionStates.Voting
+			).catch((err) -> next err)
+
+app.post /^\/(?:\d{4}\/)?vote$/, (req, res) ->
+	if not req.needsYearRedirect()
+		if req.competition.getState() is lib.data.competitionStates.Voting
+			votes = []
+			
+			for id, score of req.body
+				item = voteID.fromID(id)
+				if item?.destUser? and item?.wish?
+					vote = { destUser: item.destUser, wish: item.wish, score: parseInt(score) }
+					if 0 < vote.score <= 5
+						votes.push vote
+			
+			data.saveVotes req.competitionEntry, votes
+
+			if req.query.json?
+				res.json { success: true }
+			else
+				res.redirect res.locals.genLink '/vote'
+		else
+			if req.query.json?
+				res.json { success: false, error: 'Competition not in voting.' }
+			else
+				res.redirect res.locals.genLink '/vote'
 
 # /task
 #todo later

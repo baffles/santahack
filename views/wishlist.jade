@@ -33,32 +33,29 @@ block content
 					.control-group
 						label.control-label(for='wish1') Wish 1
 						.controls
-							input.input-xxlarge(name='wish1', type='text', placeholder='Wish 1', value=formVals.wish1)
-							span.help-inline
+							input#wish1.input-xxlarge(name='wish1', type='text', placeholder='Wish 1', value=formVals.wish1)
 					.control-group
-						label.control-label(for='wish1') Wish 2
+						label.control-label(for='wish2') Wish 2
 						.controls
-							input.input-xxlarge(name='wish2', type='text', placeholder='Wish 2', value=formVals.wish2)
-							span.help-inline
+							input#wish2.input-xxlarge(name='wish2', type='text', placeholder='Wish 2', value=formVals.wish2)
 					.control-group
-						label.control-label(for='wish1') Wish 3
+						label.control-label(for='wish3') Wish 3
 						.controls
-							input.input-xxlarge(name='wish3', type='text', placeholder='Wish 3', value=formVals.wish3)
-							span.help-inline
+							input#wish3.input-xxlarge(name='wish3', type='text', placeholder='Wish 3', value=formVals.wish3)
 					
 					legend Your Machine
 					p What kind of computer do you use for gaming?
 					.control-group
 						label.control-label(for='machinePerformance') Performance
 						.controls
-							select(name='machinePerformance')
+							select#machinePerformance(name='machinePerformance')
 								option(value='lowend', selected=formVals.machinePerformance == 'lowend') Low End
 								option(value='midrange', selected=formVals.machinePerformance == 'midrange') Mid-Range
 								option(value='highend', selected=formVals.machinePerformance == 'highend') High End
 					.control-group
 						label.control-label(for='preferredOS') Operating System
 						.controls
-							select(name='preferredOS')
+							select#preferredOS(name='preferredOS')
 								option(value='windows', selected=formVals.preferredOS == 'windows') Microsoft&reg; Windows&reg;
 								option(value='linux', selected=formVals.preferredOS == 'linux') Linux
 								option(value='osx', selected=formVals.preferredOS == 'osx') Apple&reg; OS X&reg;
@@ -68,13 +65,13 @@ block content
 					.control-group
 						.controls
 							label.checkbox(for='canDevWindows') 
-								input(name='canDevWindows', type='checkbox', checked=formVals.canDevWindows)
+								input#canDevWindows(name='canDevWindows', type='checkbox', checked=formVals.canDevWindows)
 								| Microsoft&reg; Windows&reg;
 							label.checkbox(for='canDevLinux') 
-								input(name='canDevLinux', type='checkbox', checked=formVals.canDevLinux)
+								input#canDevLinux(name='canDevLinux', type='checkbox', checked=formVals.canDevLinux)
 								| Linux
 							label.checkbox(for='canDevMac') 
-								input(name='canDevMac', type='checkbox', checked=formVals.canDevMac)
+								input#canDevMac(name='canDevMac', type='checkbox', checked=formVals.canDevMac)
 								| Apple&reg; OS X&reg;
 					
 					.control-group
@@ -82,35 +79,44 @@ block content
 							button.btn.btn-primary(name='save', type='submit', data-saving-text='Saving...', data-saved-text='Saved', autocomplete='off') Save changes
 	else if competition.getState().seq > competitionStates.Registration.seq
 		h2 Your Wishlist
-		h3 Your Letter
-		p We mailed a letter to Santa with the wishlist you filled in. Here's what we said:
-		p You'd like an awesome new game for Christmas, and have three really cool ideas:
-		ul
-			li: strong Wish 1
-			li: strong Wish 2
-			li: strong Wish 3
-		p You have a 
-			strong Low/mid/high-end win/lin/mac
-			|  machine for playing games on.
-		p You're willing to help the elves by creating a game fulfilling someone else's wishes. You're comfortable developing for
-			strong Windows and Linux
-			| .
-		h3 Voting Results [shown after registration ends]
-		p We also held a vote to see how your game ideas fared among your peers.
-			|  [The results are still being collected and tallied, but here are the results so far:]|[Here are the results:]
-			ul
-				li
-					strong Wish 1
-					|  - 
-					span(style='color: red') 2
-					|  / 5
-				li
-					strong Wish 2
-					|  - 
-					span(style='color: green') 4
-					|  / 5
-				li
-					strong Wish 3
-					|  - 
-					span(style='color: green') 5
-					|  / 5
+		if typeof competitionEntry !== 'undefined' && competitionEntry != null
+			if competitionEntry.isWishlistComplete()
+				h3 Your Letter
+				p We mailed a letter to Santa with the wishlist you filled in. Here's what we said:
+				p You'd like an awesome new game for Christmas, and have three really cool ideas:
+				ul
+					for wish in competitionEntry.wishlist.wishes
+						li: strong= wish
+				p You have a 
+					strong
+						= competitionEntry.wishlist.getMachinePerformanceDisplay()
+						|  
+						= competitionEntry.wishlist.getPreferredOSDisplay()
+					|  machine for playing games on.
+				p You're willing to help the elves by creating a game fulfilling someone else's wishes. You're comfortable developing for 
+					strong= competitionEntry.wishlist.getDevListDisplay()
+					| .
+				h3 Voting Results
+				p We also held a vote to see how your game ideas fared among your peers. 
+					if competition.getState().seq < competitionStates.VotingIntermission.seq
+						| The results are still being collected and tallied, but here are the results so far:
+					else
+						| Here are the results:
+					ul
+						for wish, idx in competitionEntry.wishlist.wishes
+							li
+								- var wishScore = competitionEntry.wishlist.votes != null && competitionEntry.wishlist.votes[idx] != null ? competitionEntry.wishlist.votes[idx].score / competitionEntry.wishlist.votes[idx].count : null
+								strong= competitionEntry.wishlist.wishes[idx]
+								|  - 
+								if wishScore != null
+									span(style='color: #{wishScore > 2.5 ? "green" : "red"}')= wishScore
+									|  / 5
+								else
+									| No votes yet
+				if competition.getState().seq < competitionStates.VotingIntermission.seq
+					h3 Withdraw
+					p You may still withdraw from the competition if you don't plan to participate. If you withdraw, beware that it's too late to re-join.
+						form#withdrawForm(method='GET', action=genLink('/withdraw'))
+							button.btn.btn-small.btn-danger(type='submit', data-withdrawing-text='Withdrawing...', autocomplete='off') Withdraw
+			else
+				p I'm sorry, but it looks like you never completed your wishlist for SantaHack #{year}! We didn't want to send Santa a half-baked letter, so I'm afraid you won't be receiving anything this year. Better luck next year!
