@@ -111,6 +111,11 @@ app.use (req, res, next) ->
 		res.locals.showWarnMsg = true
 	next()
 
+# no caching for dynamic pages
+app.use (req, res, next) ->
+	res.setHeader "Cache-Control", "no-cache"
+	next()
+
 app.use app.router
 
 if app.settings.env = 'development'
