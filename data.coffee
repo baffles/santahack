@@ -164,7 +164,8 @@ module.exports = class Data
 	
 	saveCompetitionEntry: (entry) ->
 		# clean up entry
-		entry.clean()
+		if entry.clean?
+			entry.clean()
 		
 		###entry = 
 			user: entry.user
