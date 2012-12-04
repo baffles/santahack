@@ -173,6 +173,8 @@ module.exports = class Data
 			.seq_((s) => @entriesCollection.find({ user: { $ne: entry.user }, year: entry.year }, { 'user': 1, 'wishlist.wishes': 1 }).toArray s)
 			.flatten()
 			.seqMap((entry) -> this null, entry?.wishlist?.wishes?.map (wish, idx) -> { destUser: entry.user, wish: idx, wishText: wish, score: null })
+			.flatten()
+			.unflatten()
 			.seq((wishes) ->
 				if entry.votesCast? then wishes = wishes.concat entry.votesCast
 				wishes = _.groupBy(wishes, (wish) -> "destUser: '#{wish.destUser}', wish: '#{wish.wish}'")

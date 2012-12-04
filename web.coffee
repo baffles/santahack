@@ -26,8 +26,6 @@ app.set 'view engine', 'jade'
 
 app.use lib.express.favicon "#{__dirname}/public/images/favicon.ico"
 
-#if app.settings.env is 'development'
-#	console.log 'Compiling assets on-the-fly.'
 app.use lib.compiler
 	enabled: [ 'coffee', 'stylus', 'uglify', 'jade' ]
 	src: 'assets'
@@ -41,8 +39,6 @@ app.use lib.compiler
 	src: [ 'assets', 'assets/compiled' ]
 	dest: 'assets/compiled'
 	mount: '/static'
-#else
-#	console.log "Using pre-compiled assets in #{__dirname}/assets/compiled; regenerate with `cake build:assets`"
 app.use '/static', lib.express.static "#{__dirname}/public"
 app.use '/static', lib.express.static "#{__dirname}/assets/compiled"
 
@@ -302,16 +298,39 @@ app.post /^\/(?:\d{4}\/)?wishlist$/, (req, res) ->
 app.get /^\/(?:\d{4}\/)?vote$/, (req, res, next) ->
 	if not req.needsYearRedirect()
 		lib.seq()
-			.seq(() -> req.competitionEntry.getVoteItems this)
+			.seq_((seq) -> (req.competitionEntry?.getVoteItems seq) or seq())
 			.seq((voteItems) ->
-				# {"destUser":"2982","wish":"wish0","wishText":"wish 1","score":null}
-				voteItems = voteItems.map (item) -> { id: voteID.toID(item), wishText: item.wishText, score: item.score }
+				voteItems = voteItems?.map (item) -> { id: voteID.toID(item), wishText: item.wishText, score: item.score }
 				
 				res.render 'vote',
 					title: 'SantaHack'
 					voteItems: _.shuffle voteItems
 					showWarnMsg: req.competition.getState() isnt lib.data.competitionStates.Voting
 			).catch((err) -> next err)
+
+app.post /^\/(?:\d{4}\/)?vote$/, (req, res) ->
+	if not req.needsYearRedirect()
+		if req.competition.getState() is lib.data.competitionStates.Voting
+			votes = []
+			
+			for id, score of req.body
+				item = voteID.fromID(id)
+				if item?.destUser? and item?.wish?
+					vote = { destUser: item.destUser, wish: item.wish, score: parseInt(score) }
+					if 0 < vote.score <= 5
+						votes.push vote
+			
+			data.saveVotes req.competitionEntry, votes
+
+			if req.query.json?
+				res.json { success: true }
+			else
+				res.redirect res.locals.genLink '/vote'
+		else
+			if req.query.json?
+				res.json { success: false, error: 'Competition not in voting.' }
+			else
+				res.redirect res.locals.genLink '/vote'
 
 # /task
 #todo later
