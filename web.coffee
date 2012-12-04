@@ -440,4 +440,4 @@ app.post '/admin/deleteNews', (req, res) ->
 	res.json { success: true }
 
 app.listen process.env.PORT
-console.log "Express server at http://localhost:#{process.env.PORT}/ in #{process.env.NODE_ENV} mode" # printing app.settings.env doesn't work, wtf?
+console.log "Express server at http://localhost:#{process.env.PORT}/ in #{process.env.ENV} mode" # printing app.settings.env doesn't work, wtf?
