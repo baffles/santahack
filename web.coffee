@@ -171,22 +171,31 @@ app.get '/admin', (req, res) ->
 	res.render 'admin',
 		title: 'SantaHack Admin'
 
-app.get '/info.json', (req, res) ->
-	data.getDefaultCompetition (err, competition) ->
-		now = new Date().valueOf()
-		res.json
-			year: competition.year
-			participants: 0
-			currentPhase: competition.getState().jsonDisplay
-			timeLeft:
-					'registration-begin': (competition.registrationBegin.valueOf() - now) / 1000 | 0
-					'registration-end': (competition.registrationEnd.valueOf() - now) / 1000 | 0
-					'voting-begin': (competition.votingBegin.valueOf() - now) / 1000 | 0
-					'voting-end': (competition.votingEnd.valueOf() - now) / 1000 | 0
-					'development-begin': (competition.devBegin.valueOf() - now) / 1000 | 0
-					'development-end': (competition.devEnd.valueOf() - now) / 1000 | 0
-					'release-gifts': (competition.privateRelease.valueOf() - now) / 1000 | 0
-					'release-public': (competition.publicRelease.valueOf() - now) / 1000 | 0
+app.get '/info.json', (req, res, next) ->
+	lib.seq()
+		.seq_('competition', (s) -> data.getDefaultCompetition s)
+		.seq_('participantInfo', (s, competition) -> competition.getParticipantInfo s)
+		.seq_((s) ->
+			now = new Date().valueOf()
+			res.json
+				year: s.vars.competition.year
+				participants: s.vars.participantInfo.participants
+				completeWishlists: s.vars.participantInfo.completeWishlists
+				hasVoted: s.vars.participantInfo.hasVoted
+				eligibleParticipants: 0
+				blogEntries: 0
+				entriesSubmitted: 0
+				currentPhase: s.vars.competition.getState().jsonDisplay
+				timeLeft:
+						'registration-begin': (s.vars.competition.registrationBegin.valueOf() - now) / 1000 | 0
+						'registration-end': (s.vars.competition.registrationEnd.valueOf() - now) / 1000 | 0
+						'voting-begin': (s.vars.competition.votingBegin.valueOf() - now) / 1000 | 0
+						'voting-end': (s.vars.competition.votingEnd.valueOf() - now) / 1000 | 0
+						'development-begin': (s.vars.competition.devBegin.valueOf() - now) / 1000 | 0
+						'development-end': (s.vars.competition.devEnd.valueOf() - now) / 1000 | 0
+						'release-gifts': (s.vars.competition.privateRelease.valueOf() - now) / 1000 | 0
+						'release-public': (s.vars.competition.publicRelease.valueOf() - now) / 1000 | 0
+		).catch((err) -> next err)
 
 # /home
 app.get /^\/(?:\d{4}\/)?home$/, (req, res, next) ->
@@ -216,14 +225,14 @@ app.get /^\/(?:\d{4}\/)?rules$/, (req, res) ->
 app.get /^\/(?:\d{4}\/)?participants$/, (req, res, next) ->
 	if not req.needsYearRedirect()
 		lib.seq()
-			.seq(() -> data.getCompetitionEntries req.competition, this)
+			.seq_((s) -> req.competition.getEntries s, this, true)
 			.flatten()
-			.parMap((entry) -> data.getUserData entry.user, this)
+			.parMap_((s, entry) -> data.getUserData entry.user, s)
 			.unflatten()
 			.seq((participants) ->
 				res.render 'participants',
 					title: 'SantaHack'
-					participants: participants
+					participants: _.sortBy participants, 'name'
 			)
 
 # /entry
