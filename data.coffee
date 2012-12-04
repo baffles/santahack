@@ -100,12 +100,14 @@ module.exports = class Data
 	# Entries
 	upgradeEntry: (entry) ->
 		if entry?
-			entry.isWishlistComplete = () ->
+			entry.checkWishlist = () ->
 				entry.wishlist? and
 				entry.wishlist.wishes?.length is 3 and _(entry.wishlist.wishes).all((wish) -> wish.length > 0) and
 				entry.wishlist.machinePerformance?.length > 0 and entry.wishlist.preferredOS?.length > 0 and
 				entry.wishlist.canDev?.length > 0
 			
+			entry.clean = () => @downgradeEntry entry
+			entry.isWishlistComplete = () -> entry.wishlist?.isComplete
 			entry.getVoteItems = (callback) => @getVoteItems entry, callback
 			entry.saveVotes = (votes) => @saveVotes entry, votes
 			
@@ -134,6 +136,20 @@ module.exports = class Data
 					oses.join ', '
 		entry
 	
+	downgradeEntry: (entry) ->
+		if entry?
+			delete entry._id
+			delete entry.clean
+			delete entry.checkWishlist
+			delete entry.isWishlistComplete
+			delete entry.getVoteItems
+			delete entry.saveVotes
+			
+			if entry.wishlist?
+				delete entry.wishlist.getMachinePerformanceDisplay
+				delete entry.wishlist.getPreferredOSDisplay
+				delete entry.wishlist.getDevListDisplay
+	
 	getCompetitionEntries: (competition, callback) ->
 		throw 'callback required' if not callback?
 		@entriesCollection.find({ year: competition.year }).toArray (err, entries) => callback err, entries.map (entry) => @upgradeEntry entry
@@ -148,7 +164,7 @@ module.exports = class Data
 	
 	saveCompetitionEntry: (entry) ->
 		# clean up entry
-		delete entry._id
+		entry.clean()
 		
 		###entry = 
 			user: entry.user
@@ -170,7 +186,7 @@ module.exports = class Data
 	getVoteItems: (entry, callback) ->
 		# get votes: [ { destUser:, wish:, score? } ]
 		seq()
-			.seq_((s) => @entriesCollection.find({ user: { $ne: entry.user }, year: entry.year }, { 'user': 1, 'wishlist.wishes': 1 }).toArray s)
+			.seq_((s) => @entriesCollection.find({ user: { $ne: entry.user }, year: entry.year, 'wishlist.isComplete': true }, { 'user': 1, 'wishlist.wishes': 1 }).toArray s)
 			.flatten()
 			.seqMap((entry) -> this null, entry?.wishlist?.wishes?.map (wish, idx) -> { destUser: entry.user, wish: idx, wishText: wish, score: null })
 			.flatten()
@@ -217,6 +233,15 @@ module.exports = class Data
 			$inc = {}
 			$inc["wishlist.votes.#{change.newVote.wish}.score"] = change.newVote.score - change.oldVote.score
 			@entriesCollection.update { user: change.newVote.destUser, year: entry.year }, { $inc }
+		
+		# update hasVoted, must vote on at least half of the wishes
+		if not entry.hasVoted
+			numVotes = entry.votesCast.length + newVotes.length
+			@entriesCollection.find({ user: { $ne: entry.user }, 'wishlist.isComplete': true }).count (err, count) =>
+				throw err if err?
+				if numVotes > count * 1.5 # count * 3 / 2
+					@entriesCollection.update { user: entry.user }, { $set: { hasVoted: true } }
+			
 	
 	# Users
 	# upgrade user object with helper functions from this class

@@ -103,8 +103,11 @@ app.use (req, res, next) ->
 
 # set warning messages for the user
 app.use (req, res, next) ->
-	if req.competition?.getState() is lib.data.competitionStates.Registration and req.competitionEntry? and !req.competitionEntry.isWishlistComplete()
+	if req.competition?.getState() is lib.data.competitionStates.Registration and req.competitionEntry? and not req.competitionEntry.isWishlistComplete()
 		res.locals.warnMsg = 'It looks like your wishlist is incomplete. Please complete it in time to ensure you are allowed to participate!'
+		res.locals.showWarnMsg = true
+	else if req.competition?.getState() is lib.data.competitionStates.Voting and req.competitionEntry?.isWishlistComplete() and not req.competitionEntry.hasVoted
+		res.locals.warnMsg = 'It looks like you haven\'t voted on at least half of the descriptions yet. Please submit your votes in time to ensure you are eligible!'
 		res.locals.showWarnMsg = true
 	next()
 
@@ -281,6 +284,8 @@ app.post /^\/(?:\d{4}\/)?wishlist$/, (req, res) ->
 			entry.wishlist.canDev.push 'windows' if req.body.canDevWindows?
 			entry.wishlist.canDev.push 'linux' if req.body.canDevLinux?
 			entry.wishlist.canDev.push 'mac' if req.body.canDevMac?
+			
+			entry.wishlist.isComplete = entry.checkWishlist()
 		
 			data.saveCompetitionEntry entry
 		

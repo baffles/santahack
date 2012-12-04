@@ -10,7 +10,7 @@ block content
 			a(href='/login?return=' + returnURL) login
 			|  to vote.
 	else if competition.getState() == competitionStates.Voting
-		if competitionEntry == null
+		if competitionEntry == null || !competitionEntry.isWishlistComplete()
 			p You did not join and submit a complete wishlist for SantaHack #{year}, so you are not eligible for voting.
 		else
 			p Please vote on the following game ideas. 
