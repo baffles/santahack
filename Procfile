@@ -1,1 +1,1 @@
-web: coffee web.coffee
+web: coffee hypervisor.coffee
