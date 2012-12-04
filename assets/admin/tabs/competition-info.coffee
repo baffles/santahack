@@ -47,7 +47,7 @@ class CompetitionInfoTab extends Tab
 			$(document).delegate '#competitionForm #rules', 'keydown', (e) ->
 				keyCode = e.keyCode or e.which;
 
-				if keyCode isnt 9
+				if keyCode is 9
 					e.preventDefault();
 					start = $(this).get(0).selectionStart;
 					end = $(this).get(0).selectionEnd;

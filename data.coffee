@@ -50,8 +50,9 @@ module.exports = class Data
 	# upgrade competition object with helper functions from this class
 	upgradeCompetition: (competition) ->
 		if competition?
-			competition.getState = () => @getCompetitionState(competition)
-			competition.getEntries = (callback) => @getEntrants(competition)
+			competition.getState = () => @getCompetitionState competition 
+			competition.getEntries = (callback) => @getCompetitionEntries competition, callback
+			competition.getParticipantInfo = (callback) => @getParticipantInfo competition, callback
 		competition
 	
 	getDefaultYear: (callback) ->
@@ -153,6 +154,15 @@ module.exports = class Data
 	getCompetitionEntries: (competition, callback) ->
 		throw 'callback required' if not callback?
 		@entriesCollection.find({ year: competition.year }).toArray (err, entries) => callback err, entries.map (entry) => @upgradeEntry entry
+	
+	getParticipantInfo: (competition, callback) ->
+		throw 'callback required' if not callback?
+		seq()
+			.par_((s) => @entriesCollection.find({ year: competition.year }).count s.into 'participants')
+			.par_((s) => @entriesCollection.find({ year: competition.year, 'wishlist.isComplete': true }).count s.into 'completeWishlists')
+			.par_((s) => @entriesCollection.find({ year: competition.year, 'wishlist.isComplete': true, 'hasVoted': true }).count s.into 'hasVoted')
+			.catch((err) -> callback err, null)
+			.seq_((s) -> callback null, s.vars)
 	
 	getUserCompetitionEntry: (user, competition, callback) ->
 		throw 'callback required' if not callback?

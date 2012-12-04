@@ -4,6 +4,12 @@ block additionalCSS
 	:stylus
 		.participants
 			width 100%
+			
+			.row-fluid
+				margin-top 16px
+			
+			.row-fluid:first-child
+				margin-top 0
 		
 		.participant
 			border 2px solid #A33
@@ -35,8 +41,7 @@ block content
 	h2 Participants #{year}	
 	if participants.length > 0
 		.container.participants
-			- for (var row = 0; row < participants / 3; row++)
-			- {
+			- for (var row = 0; row < participants.length / 3; row++) {
 				- var participantsRow = participants.slice(row * 3, row * 3 + 3)
 				.row-fluid
 					- for participant in participantsRow
@@ -44,4 +49,3 @@ block content
 			- }
 	else
 		p No participants yet.
-	div(style='clear: both; height: 1px;')
