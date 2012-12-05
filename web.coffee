@@ -243,13 +243,14 @@ app.get /^\/(?:\d{4}\/)?participants$/, (req, res, next) ->
 # /entry
 app.post /^\/(?:\d{4}\/)?entry$/, (req, res) ->
 	if not req.needsYearRedirect()
-		if req.body.join?
+		state = req.competition.getState()
+		if req.body.join? and state == lib.data.competitionStates.Registration
 			# join
 			data.saveCompetitionEntry
 				user: req.user.id
 				year: req.year
 			res.redirect res.locals.genLink '/wishlist'
-		else if req.body.withdrawConfirm?
+		else if req.body.withdrawConfirm? and state.seq <= lib.data.competitionStates.Voting
 			data.removeCompetitionEntry req.competitionEntry
 			res.redirect res.locals.genLink '/'
 		else if req.body.cancel?
