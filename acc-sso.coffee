@@ -27,12 +27,12 @@ module.exports = class AccSso
 								avatar: loginInfo.response.member[0].avatar[0]._
 								picture: loginInfo.response.member[0].picture[0]._
 
-							callback undefined, user
+							callback null, user
 						else
-							callback 'invalid allegro.cc authentication token', undefined
+							callback 'invalid allegro.cc authentication token', null
 
 					parser.parseString resBody
 				
-				response.on 'error', (error) -> callback error, undefined
+				response.on 'error', (error) -> callback error, null
 		else
-			callback 'token is null', undefined
+			callback 'token is null', null

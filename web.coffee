@@ -154,19 +154,21 @@ app.get '/logout', (req, res) ->
 
 app.get '/login-return', (req, res, next) ->
 	req.session.user = null
-
-	accSso.processAuthenticationToken (req.query.token), (accErr, accUser) ->
-		if accErr?
-			next(accErr)
-		else
-			data.updateUserData accUser
-			data.getUserData accUser.id, (err, user) ->
-				if err?
-					next(err)
-				else
-					delete user._id # no need to store the db ID in the session
-					req.session.user = user
-					res.redirect (req.query.return) ? '/'
+	
+	lib.seq()
+		.seq('accUser', () -> accSso.processAuthenticationToken req.query.token, this)
+		.forEach(() -> data.updateUserData @vars.accUser)
+		.seq('userData', () -> data.getUserData @vars.accUser.id, this)
+		.seq(() ->
+			# generate user information for cookie; any data from acc overrides whatever was in DB (update may not have happened yet)
+			userData = @vars.userData
+			for k, v of @vars.accUser
+				userData[k] = v
+			
+			delete userData._id # no need to store the db ID in the session
+			req.session.user = userData
+			res.redirect req.query.return ? '/'
+		).catch((err) -> next err)
 
 app.get '/admin', (req, res) ->
 	if not req.session?.user?.isAdmin
@@ -178,47 +180,40 @@ app.get '/admin', (req, res) ->
 
 app.get '/info.json', (req, res, next) ->
 	lib.seq()
-		.seq_('competition', (s) -> data.getDefaultCompetition s)
-		.seq_('participantInfo', (s, competition) -> competition.getParticipantInfo s)
-		.seq_((s) ->
+		.seq('competition', () -> data.getDefaultCompetition this)
+		.seq('participantInfo', (competition) -> competition.getParticipantInfo this)
+		.seq(() ->
 			now = new Date().valueOf()
 			res.json
-				year: s.vars.competition.year
-				participants: s.vars.participantInfo.participants
-				completeWishlists: s.vars.participantInfo.completeWishlists
-				hasVoted: s.vars.participantInfo.hasVoted
+				year: @vars.competition.year
+				participants: @vars.participantInfo.participants
+				completeWishlists: @vars.participantInfo.completeWishlists
+				hasVoted: @vars.participantInfo.hasVoted
 				eligibleParticipants: 0
 				blogEntries: 0
 				entriesSubmitted: 0
-				currentPhase: s.vars.competition.getState().jsonDisplay
+				currentPhase: @vars.competition.getState().jsonDisplay
 				timeLeft:
-						'registration-begin': (s.vars.competition.registrationBegin.valueOf() - now) / 1000 | 0
-						'registration-end': (s.vars.competition.registrationEnd.valueOf() - now) / 1000 | 0
-						'voting-begin': (s.vars.competition.votingBegin.valueOf() - now) / 1000 | 0
-						'voting-end': (s.vars.competition.votingEnd.valueOf() - now) / 1000 | 0
-						'development-begin': (s.vars.competition.devBegin.valueOf() - now) / 1000 | 0
-						'development-end': (s.vars.competition.devEnd.valueOf() - now) / 1000 | 0
-						'release-gifts': (s.vars.competition.privateRelease.valueOf() - now) / 1000 | 0
-						'release-public': (s.vars.competition.publicRelease.valueOf() - now) / 1000 | 0
+						'registration-begin': (@vars.competition.registrationBegin.valueOf() - now) / 1000 | 0
+						'registration-end': (@vars.competition.registrationEnd.valueOf() - now) / 1000 | 0
+						'voting-begin': (@vars.competition.votingBegin.valueOf() - now) / 1000 | 0
+						'voting-end': (@vars.competition.votingEnd.valueOf() - now) / 1000 | 0
+						'development-begin': (@vars.competition.devBegin.valueOf() - now) / 1000 | 0
+						'development-end': (@vars.competition.devEnd.valueOf() - now) / 1000 | 0
+						'release-gifts': (@vars.competition.privateRelease.valueOf() - now) / 1000 | 0
+						'release-public': (@vars.competition.publicRelease.valueOf() - now) / 1000 | 0
 		).catch((err) -> next err)
 
 # /home
 app.get /^\/(?:\d{4}\/)?home$/, (req, res, next) ->
 	if not req.needsYearRedirect()
-		data.getNews req.year, 5, (err, news) ->
-			if err?
-				next err
-			else
+		lib.seq()
+			.seq(() -> data.getNews req.year, 5, this)
+			.seq((news) ->
 				res.render 'home',
 					title: 'SantaHack'
 					posts: news
-
-app.get /^\/(?:\d{4}\/)?years$/, (req, res) ->
-	if not req.needsYearRedirect()
-		#data.getCompetition req.year, (err, competition) ->
-			res.send req.competition.getState()
-	#	competitionHelper.getCompetitionList (err, years) ->
-			#res.send JSON.stringify years
+			).catch((err) -> next err)
 
 # /rules
 app.get /^\/(?:\d{4}\/)?rules$/, (req, res) ->
@@ -230,15 +225,15 @@ app.get /^\/(?:\d{4}\/)?rules$/, (req, res) ->
 app.get /^\/(?:\d{4}\/)?participants$/, (req, res, next) ->
 	if not req.needsYearRedirect()
 		lib.seq()
-			.seq_((s) -> req.competition.getEntries s, this, true)
+			.seq(() -> req.competition.getEntries this)
 			.flatten()
-			.parMap_((s, entry) -> data.getUserData entry.user, s)
+			.parMap((entry) -> data.getUserData entry.user, this)
 			.unflatten()
 			.seq((participants) ->
 				res.render 'participants',
 					title: 'SantaHack'
 					participants: _.sortBy participants, 'name'
-			)
+			).catch((err) -> next err)
 
 # /entry
 app.post /^\/(?:\d{4}\/)?entry$/, (req, res) ->
@@ -318,7 +313,7 @@ app.post /^\/(?:\d{4}\/)?wishlist$/, (req, res) ->
 app.get /^\/(?:\d{4}\/)?vote$/, (req, res, next) ->
 	if not req.needsYearRedirect()
 		lib.seq()
-			.seq_((seq) -> (req.competitionEntry?.getVoteItems seq) or seq())
+			.seq(() -> (req.competitionEntry?.getVoteItems this) or this())
 			.seq((voteItems) ->
 				voteItems = voteItems?.map (item) -> { id: voteID.toID(item), wishText: item.wishText, score: item.score }
 				
