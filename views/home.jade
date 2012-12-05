@@ -1,21 +1,7 @@
 extends layout
 
 block additionalCSS
-	:stylus
-		#news
-			margin-top 1em
-	
-		div.news-item
-			border-bottom solid 1px #CCC
-			margin-bottom 1em
-			padding 0 1em 0 1em
-			
-			h3
-				margin 0
-			
-			span.date
-				padding-left 1em
-				font-weight bold
+	link(rel='stylesheet', href='/static/css/news.css')
 
 mixin newsPost(post)
 	.news-item

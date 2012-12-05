@@ -1,19 +1,11 @@
 extends layout
 
-block additionalCSS
-	link(rel='stylesheet', href='/static/lib/bootstrap_cust/css/bootstrap.min.css', media='screen')
-
-block scripts
-	script(type='text/javascript', src='//ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js')
-	script(type='text/javascript', src='/static/lib/bootstrap_cust/js/bootstrap.min.js')
-	script(type='text/javascript', src='/static/js/entry.js')
-
 block content
 	h2 Withdraw from SantaHack #{year}
 	p Are you sure you wish to withdraw from SantaHack #{year}? Your wishlist and related entry info will be deleted.
 		form(method='POST', action=genLink('/entry'))
 			.btn-group
-				button#withdrawButton.btn.btn-large.btn-danger(name='withdrawConfirm', data-withdrawing-text='Withdrawing...', autocomplete='off') Withdraw
-				button#cancelButton.btn.btn-large(name='cancel', data-cancel-text='Cancelling...', autocomplete='off') Cancel
+				button#withdrawButton.btn.btn-large.btn-danger(name='withdrawConfirm') Withdraw
+				button#cancelButton.btn.btn-large(name='cancel') Cancel
 
 	

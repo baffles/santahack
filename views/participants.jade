@@ -1,40 +1,10 @@
 extends layout
 
 block additionalCSS
-	:stylus
-		.participants
-			width 100%
-			
-			.row-fluid
-				margin-top 16px
-			
-			.row-fluid:first-child
-				margin-top 0
-		
-		.participant
-			border 2px solid #A33
-			background-color #CF8C8C
-			padding 8px
-
-			img.avatar
-				float left
-				width 60px
-				height 60px
-
-			div.name
-				float left
-				width 116px
-				padding-left 8px
-
-				font-size 110%
-				color #fff
-
-				overflow auto
-				word-wrap break-word
+	link(rel='stylesheet', href='/static/css/participants.css')
 
 mixin participant(p)
-	.span4.participant
-		img.avatar(src='http://static.allegro.cc/image/avatar/#{p.avatar}')
+	.span4.participant(style="background-image: url('http://static.allegro.cc/image/avatar/#{p.avatar}')")
 		.name= p.name
 
 block content
