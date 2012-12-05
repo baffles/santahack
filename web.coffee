@@ -251,10 +251,12 @@ app.post /^\/(?:\d{4}\/)?entry$/, (req, res) ->
 				user: req.user.id
 				year: req.year
 			res.redirect res.locals.genLink '/wishlist'
-		else if req.body.withdrawConfirm? and state.seq <= lib.data.competitionStates.Voting
+		else if req.body.withdrawConfirm? and state.seq <= lib.data.competitionStates.Voting.seq
 			data.removeCompetitionEntry req.competitionEntry
 			res.redirect res.locals.genLink '/'
 		else if req.body.cancel?
+			res.redirect res.locals.genLink '/wishlist'
+		else
 			res.redirect res.locals.genLink '/wishlist'
 
 # /withdraw
