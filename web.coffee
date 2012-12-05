@@ -24,6 +24,10 @@ app = lib.express()
 app.set 'views', "#{__dirname}/views"
 app.set 'view engine', 'jade'
 
+app.use (req, res, next) ->
+	res.locals.requestTime = new Date()
+	next()
+
 app.use lib.express.favicon "#{__dirname}/public/images/favicon.ico"
 
 app.use lib.compiler
@@ -135,6 +139,7 @@ app.locals.markdown = lib.marked
 app.locals.friendlyDate = (date) -> lib.moment(date).fromNow()
 app.locals.utcDate = (date) -> lib.moment(date).utc().format 'dddd, MMMM Do YYYY, h:mm:ss a [UTC]'
 app.locals.displayTime = () -> lib.moment().utc().format 'MMM D[,] YYYY, h:mm A [UTC]'
+app.locals.getGenerationTime = (requestTime) -> lib.moment().diff(lib.moment(requestTime), 'seconds', true)
 
 # /
 app.get /^\/(\d{4})?\/?$/, (req, res) ->

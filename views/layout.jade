@@ -59,4 +59,6 @@ html
 			#content
 				block content
 		#footer Copyright &copy; <a href="http://www.baf.cc/">Robert Ferris</a>, 2011-2012<br />Design by Mark Oates via <a href="http://zeoxdesign.com/">Zeox Design</a>
-				
+			span#genTime Page generated in  
+				strong= getGenerationTime(requestTime)
+				|  seconds.
