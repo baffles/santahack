@@ -48,6 +48,7 @@ app.use lib.express.session
 	store: new (lib.mongoStore lib.express)
 		url: process.env.MONGOHQ_URL
 		db: 'test'
+	key: 'session'
 	secret: 'santa shack'
 app.use lib.express.bodyParser()
 app.use lib.express.methodOverride()
