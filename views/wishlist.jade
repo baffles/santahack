@@ -79,44 +79,43 @@ block content
 							button.btn.btn-primary(name='save', type='submit', data-saving-text='Saving...', data-saved-text='Saved', autocomplete='off') Save changes
 	else if competition.getState().seq > competitionStates.Registration.seq
 		h2 Your Wishlist
-		if typeof competitionEntry !== 'undefined' && competitionEntry != null
-			if competitionEntry.isWishlistComplete()
-				h3 Your Letter
-				p We mailed a letter to Santa with the wishlist you filled in. Here's what we said:
-				p You'd like an awesome new game for Christmas, and have three really cool ideas:
-				ul
-					for wish in competitionEntry.wishlist.wishes
-						li: strong= wish
-				p You have a 
-					strong
-						= competitionEntry.wishlist.getMachinePerformanceDisplay()
-						|  
-						= competitionEntry.wishlist.getPreferredOSDisplay()
-					|  machine for playing games on.
-				p You're willing to help the elves by creating a game fulfilling someone else's wishes. You're comfortable developing for 
-					strong= competitionEntry.wishlist.getDevListDisplay()
-					| .
-				h3 Voting Results
-				p We also held a vote to see how your game ideas fared among your peers. 
-					if competition.getState().seq < competitionStates.VotingIntermission.seq
-						| The results are still being collected and tallied, but here are the results so far:
-					else
-						| Here are the results:
-					ul
-						for wish, idx in competitionEntry.wishlist.wishes
-							li
-								- var wishScore = competitionEntry.wishlist.votes != null && competitionEntry.wishlist.votes[idx] != null ? competitionEntry.wishlist.votes[idx].score / competitionEntry.wishlist.votes[idx].count : null
-								strong= competitionEntry.wishlist.wishes[idx]
-								|  - 
-								if wishScore != null
-									span(style='color: #{wishScore > 2.5 ? "green" : "red"}')= wishScore
-									|  / 5
-								else
-									| No votes yet
+		if typeof competitionEntry !== 'undefined' && competitionEntry != null && competitionEntry.isWishlistComplete()
+			h3 Your Letter
+			p We mailed a letter to Santa with the wishlist you filled in. Here's what we said:
+			p You'd like an awesome new game for Christmas, and have three really cool ideas:
+			ul
+				for wish in competitionEntry.wishlist.wishes
+					li: strong= wish
+			p You have a 
+				strong
+					= competitionEntry.wishlist.getMachinePerformanceDisplay()
+					|  
+					= competitionEntry.wishlist.getPreferredOSDisplay()
+				|  machine for playing games on.
+			p You're willing to help the elves by creating a game fulfilling someone else's wishes. You're comfortable developing for 
+				strong= competitionEntry.wishlist.getDevListDisplay()
+				| .
+			h3 Voting Results
+			p We also held a vote to see how your game ideas fared among your peers. 
 				if competition.getState().seq < competitionStates.VotingIntermission.seq
-					h3 Withdraw
-					p You may still withdraw from the competition if you don't plan to participate. If you withdraw, beware that it's too late to re-join.
-						form#withdrawForm(method='GET', action=genLink('/withdraw'))
-							button.btn.btn-small.btn-danger(type='submit', data-withdrawing-text='Withdrawing...', autocomplete='off') Withdraw
-			else
-				p I'm sorry, but it looks like you never completed your wishlist for SantaHack #{year}! We didn't want to send Santa a half-baked letter, so I'm afraid you won't be receiving anything this year. Better luck next year!
+					| The results are still being collected and tallied, but here are the results so far:
+				else
+					| Here are the results:
+				ul
+					for wish, idx in competitionEntry.wishlist.wishes
+						li
+							- var wishScore = competitionEntry.wishlist.votes != null && competitionEntry.wishlist.votes[idx] != null ? competitionEntry.wishlist.votes[idx].score / competitionEntry.wishlist.votes[idx].count : null
+							strong= competitionEntry.wishlist.wishes[idx]
+							|  - 
+							if wishScore != null
+								span(style='color: #{wishScore > 2.5 ? "green" : "red"}')= wishScore
+								|  / 5
+							else
+								| No votes yet
+			if competition.getState().seq < competitionStates.VotingIntermission.seq
+				h3 Withdraw
+				p You may still withdraw from the competition if you don't plan to participate. If you withdraw, beware that it's too late to re-join.
+					form#withdrawForm(method='GET', action=genLink('/withdraw'))
+						button.btn.btn-small.btn-danger(type='submit', data-withdrawing-text='Withdrawing...', autocomplete='off') Withdraw
+		else
+			p I'm sorry, but it looks like you never completed your wishlist for SantaHack #{year}! We didn't want to send Santa a half-baked letter, so I'm afraid you won't be receiving anything this year. Better luck next year!
