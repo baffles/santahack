@@ -233,7 +233,7 @@ app.get /^\/(?:\d{4}\/)?participants$/, (req, res, next) ->
 			.seq((participants) ->
 				res.render 'participants',
 					title: 'SantaHack'
-					participants: _.sortBy participants, 'name'
+					participants: _.sortBy(participants, (p) -> p.name.toLowerCase())
 			).catch((err) -> next err)
 
 # /entry
