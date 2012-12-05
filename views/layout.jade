@@ -34,7 +34,7 @@ html
 			if typeof(warnMsg) !== 'undefined' && warnMsg != null && showWarnMsg
 				#alertContainer
 					#alert.alert.alert-warn
-						button.close(type='button', data-dismiss='alert') &times;</button>
+						button.close(type='button', onClick='$("#alertContainer #alert").slideUp()') &times;</button>
 						span
 							strong Uh oh...
 							|  
