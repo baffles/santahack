@@ -24,7 +24,7 @@ $ () ->
 				data: vote
 				dataType: 'json'
 				beforeSend: (req, settings) ->
-					$statusIcon.removeClass().addClass('icon-refresh')
+					$statusIcon.removeClass().addClass('icon-upload')
 					$statusIcon.data('tooltip').options.title = 'Saving...'
 					$row.removeClass('error')
 				success: (reply) ->

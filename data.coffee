@@ -194,10 +194,26 @@ module.exports = class Data
 		if entry.user? and entry.year?
 			@entriesCollection.remove { user: entry.user, year: entry.year }
 	
+	getWishes: (year, callback) ->
+		seq()
+			.seq_((s) => @entriesCollection.find({ year: year }, { user: 1, 'wishlist.wishes': 1, 'wishlist.isComplete': 1 }).toArray s)
+			.flatten()
+			.seqMap((entry) -> this null, entry?.wishlist?.wishes?.map (wish, idx) -> { destUser: entry.user, wish: idx, wishText: wish, isListComplete: entry.wishlist.isComplete })
+			.flatten()
+			.unflatten()
+			.seq((wishes) -> callback null, wishes)
+	
+	saveWishes: (year, wishes) ->
+		# piggy backing off the vote system, we're getting [ { destUser:, wish:, wishText: } ]
+		for wish in wishes
+			$set = {}
+			$set["wishlist.wishes.#{wish.wish}"] = wish.wishText
+			@entriesCollection.update { user: wish.destUser, year: year }, { $set }
+	
 	getVoteItems: (entry, callback) ->
 		# get votes: [ { destUser:, wish:, score? } ]
 		seq()
-			.seq_((s) => @entriesCollection.find({ user: { $ne: entry.user }, year: entry.year, 'wishlist.isComplete': true }, { 'user': 1, 'wishlist.wishes': 1 }).toArray s)
+			.seq_((s) => @entriesCollection.find({ user: { $ne: entry.user }, year: entry.year, 'wishlist.isComplete': true }, { user: 1, 'wishlist.wishes': 1 }).toArray s)
 			.flatten()
 			.seqMap((entry) -> this null, entry?.wishlist?.wishes?.map (wish, idx) -> { destUser: entry.user, wish: idx, wishText: wish, score: null })
 			.flatten()

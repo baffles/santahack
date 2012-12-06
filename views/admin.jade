@@ -7,15 +7,18 @@ html
 		link(rel='stylesheet', href='/static/lib/bootstrap/css/bootstrap-responsive.min.css')
 		link(rel='shortcut icon', href='/static/images/favicon.ico')
 		script(type='text/javascript', src='//ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js')
+		script(type='text/javascript', src='/static/lib/jquery.textchange.min.js')
 		script(type='text/javascript', src='/static/lib/bootstrap/js/bootstrap.min.js')
 		script(type='text/javascript', src='/static/lib/moment/moment.min.js')
 		script(type='text/javascript', src='/static/admin/admin.min.js')
 		script(type='text/javascript', src='/static/admin/tabs/competition-info.min.js')
+		script(type='text/javascript', src='/static/admin/tabs/edit-wishes.min.js')
 		script(type='text/javascript', src='/static/admin/tabs/news.min.js')
 		:coffeescript
 			$ () ->
 				Admin.addTab 'competition', 'Competition Info', new CompetitionInfoTab()
 				Admin.addTab 'news', 'News', new NewsTab()
+				Admin.addTab 'wishlists', 'Edit Wishes', new EditWishesTab()
 				# pairings/assignments, pairings/gifts. maybe other stuff as necessario, but that stuff comes after the competition workflow
 				
 				Admin.selectTab 'competition'

@@ -457,5 +457,36 @@ app.post '/admin/deleteNews', (req, res) ->
 	data.deleteNews req.body
 	res.json { success: true }
 
+app.get '/admin/getWishes', (req, res) ->
+	if not req.session?.user?.isAdmin
+		res.json 401, { success: false, error: 'Unauthorized' }
+		return
+	
+	lib.seq()
+		.seq(() -> data.getWishes parseInt(req.query.year), this)
+		.seq((wishes) ->
+			wishes = wishes.map (wish) -> { id: voteID.toID(wish), wishText: wish.wishText, isListComplete: wish.isListComplete }
+			res.json wishes
+		).catch((err) ->
+			res.json 500, { success: false, error: err }
+		)
+
+app.post '/admin/saveWishes', (req, res) ->
+	if not req.session?.user?.isAdmin
+		res.json 401, { success: false, error: 'Unauthorized' }
+		return
+	
+	wishes = []
+	
+	for id, text of req.body
+		item = voteID.fromID(id)
+		if item?.destUser? and item?.wish?
+			wishes.push { destUser: item.destUser, wish: item.wish, wishText: text }
+	
+	# todo: add error catching/reporting
+	data.saveWishes parseInt(req.query.year), wishes
+	
+	res.json { success: true }
+
 app.listen process.env.PORT
 console.log "Express server at http://localhost:#{process.env.PORT}/ in #{process.env.ENV} mode" # printing app.settings.env doesn't work, wtf?
