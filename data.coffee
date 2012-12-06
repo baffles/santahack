@@ -30,7 +30,7 @@ module.exports = class Data
 	# News
 	getNews: (year, num, callback) ->
 		throw 'callback required' if not callback?
-		@newsCollection.find({ year: year }).sort({ date: -1}).limit(num).toArray (err, news) -> callback err, news
+		@newsCollection.find({ year: year, date: { $lte: new Date() } }).sort({ date: -1}).limit(num).toArray (err, news) -> callback err, news
 	
 	saveNews: (post) ->
 		if post._id?
