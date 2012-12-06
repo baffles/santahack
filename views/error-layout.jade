@@ -1,0 +1,21 @@
+!!!
+html
+	head
+		title SantaHack
+		link(rel='stylesheet', href='/static/css/style.css')
+		link(rel='shortcut icon', href='/static/images/favicon.ico')
+	body
+		#container
+			#header
+				h1 SantaHack
+			#navigation
+				ul
+					li: a(href='/') Home
+			#content
+				block content
+		#footer Copyright &copy; <a href="http://www.baf.cc/">Robert Ferris</a>, 2011-2012<br />Design by Mark Oates via <a href="http://zeoxdesign.com/">Zeox Design</a>
+			if typeof getGenerationTime === 'function'
+				span#genTime Page generated in  
+					strong= getGenerationTime(requestTime)
+					|  seconds.
+

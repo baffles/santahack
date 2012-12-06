@@ -87,9 +87,13 @@ app.use (req, res, next) ->
 		lib.seq()
 			.seq(() -> data.getCompetition req.year, this)
 			.seq((competition) ->
-				req.competition = res.locals.competition = competition
-				res.locals.competitionStates = lib.data.competitionStates
-				next()
+				if competition?
+					req.competition = res.locals.competition = competition
+					res.locals.competitionStates = lib.data.competitionStates
+					next()
+				else
+					res.status 404
+					res.render 'error-404'
 			).catch((err) -> next err)
 	else
 		next()
@@ -123,12 +127,20 @@ app.use (req, res, next) ->
 
 app.use app.router
 
-if app.settings.env = 'development'
+app.use (req, res, next) ->
+	res.status 404
+	res.render 'error-404'
+
+if app.settings.env is 'development'
 	app.use lib.express.errorHandler
 		dumpExceptions: true
 		showStack: true
 else
-	app.use lib.express.errorHandler 
+	app.use (err, req, res, next) ->
+		res.status 500
+		res.render 'error-500'
+	app.use (err, req, res, next) ->
+		res.send 500, 'Uh oh... internal server error while processing another internal server error.'
 
 lib.marked.setOptions
 	gfm: true
@@ -276,19 +288,22 @@ app.get /^\/(?:\d{4}\/)?wishlist$/, (req, res) ->
 
 app.get /^\/(?:\d{4}\/)?wishlist.json$/, (req, res) ->
 	if not req.needsYearRedirect()
-		res.send getWishlistFormVals req.competitionEntry
+		res.json getWishlistFormVals req.competitionEntry
 
 getWishlistFormVals = (entry) ->
-	{
-		wish1: entry?.wishlist?.wishes[0]
-		wish2: entry?.wishlist?.wishes[1]
-		wish3: entry?.wishlist?.wishes[2]
-		machinePerformance: entry?.wishlist?.machinePerformance
-		preferredOS: entry?.wishlist?.preferredOS
-		canDevWindows: (entry?.wishlist?.canDev?.indexOf('windows') ? -1) >= 0
-		canDevLinux: (entry?.wishlist?.canDev?.indexOf('linux') ? -1) >= 0
-		canDevMac: (entry?.wishlist?.canDev?.indexOf('mac') ? -1) >= 0
-	}
+	if entry?
+		{
+			wish1: entry?.wishlist?.wishes[0]
+			wish2: entry?.wishlist?.wishes[1]
+			wish3: entry?.wishlist?.wishes[2]
+			machinePerformance: entry?.wishlist?.machinePerformance
+			preferredOS: entry?.wishlist?.preferredOS
+			canDevWindows: (entry?.wishlist?.canDev?.indexOf('windows') ? -1) >= 0
+			canDevLinux: (entry?.wishlist?.canDev?.indexOf('linux') ? -1) >= 0
+			canDevMac: (entry?.wishlist?.canDev?.indexOf('mac') ? -1) >= 0
+		}
+	else
+		{}
 
 app.post /^\/(?:\d{4}\/)?wishlist$/, (req, res) ->
 	if not req.needsYearRedirect()
