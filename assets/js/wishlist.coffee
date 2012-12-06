@@ -51,9 +51,7 @@ $ () ->
 	$saveButton.click (e) ->
 		$saveButton.saving()
 	
-	$wishlistForm = $('#wishlistForm')
-	
-	$wishlistForm.submit (e) ->
+	$('#wishlistForm').submit (e) ->
 		e.preventDefault()
 		$saveButton.saving()
 		$discardButton.disable()
@@ -106,7 +104,17 @@ $ () ->
 				$saveButton.enable()
 				$discardButton.enable()
 	
-	$wishlistForm.on 'keyup keypress blur change', () ->
+	$('#wishlistForm input[type=text]').bind 'textchange', () ->
+		# on form change, re-enable the save/discard buttons
+		$saveButton.enable()
+		$discardButton.enable()
+	
+	$('#wishlistForm input[type=checkbox]').change () ->
+		# on form change, re-enable the save/discard buttons
+		$saveButton.enable()
+		$discardButton.enable()
+		
+	$('#wishlistForm select').change () ->
 		# on form change, re-enable the save/discard buttons
 		$saveButton.enable()
 		$discardButton.enable()
