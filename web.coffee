@@ -401,6 +401,9 @@ app.get '/admin/getCompetition', (req, res) ->
 	if not req.session?.user?.isAdmin
 		res.json 401, { success: false, error: 'Unauthorized' }
 		return
+	if not req.query.year?
+		res.json { success: false, error: 'Missing year parameter' }
+		return
 	
 	data.getCompetition parseInt(req.query.year), (err, comp) ->
 		if err?
@@ -476,6 +479,9 @@ app.get '/admin/getWishes', (req, res) ->
 	if not req.session?.user?.isAdmin
 		res.json 401, { success: false, error: 'Unauthorized' }
 		return
+	if not req.query.year?
+		res.json { success: false, error: 'Missing year parameter' }
+		return
 	
 	lib.seq()
 		.seq(() -> data.getWishes parseInt(req.query.year), this)
@@ -489,6 +495,9 @@ app.get '/admin/getWishes', (req, res) ->
 app.post '/admin/saveWishes', (req, res) ->
 	if not req.session?.user?.isAdmin
 		res.json 401, { success: false, error: 'Unauthorized' }
+		return
+	if not req.query.year?
+		res.json { success: false, error: 'Missing year parameter' }
 		return
 	
 	wishes = []
