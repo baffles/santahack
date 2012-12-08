@@ -220,7 +220,7 @@ module.exports = class Data
 		seq()
 			.seq_((s) => @entriesCollection.find({ user: { $ne: entry.user }, year: entry.year, 'wishlist.isComplete': true }, { user: 1, 'wishlist.wishes': 1 }).toArray s)
 			.flatten()
-			.seqMap((entry) -> this null, entry?.wishlist?.wishes?.map (wish, idx) -> { destUser: entry.user, wish: idx, wishText: wish, score: null })
+			.parMap((entry) -> this null, entry?.wishlist?.wishes?.map (wish, idx) -> { destUser: entry.user, wish: idx, wishText: wish, score: null })
 			.flatten()
 			.unflatten()
 			.seq((wishes) ->
@@ -268,7 +268,7 @@ module.exports = class Data
 		
 		# update hasVoted, must vote on at least half of the wishes
 		if not entry.hasVoted
-			numVotes = entry.votesCast.length + newVotes.length
+			numVotes = entry.votesCast?.length + newVotes.length
 			@entriesCollection.find({ user: { $ne: entry.user }, 'wishlist.isComplete': true }).count (err, count) =>
 				throw err if err?
 				if numVotes > count * 1.5 # count * 3 / 2
