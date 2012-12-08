@@ -198,10 +198,11 @@ module.exports = class Data
 		seq()
 			.seq_((s) => @entriesCollection.find({ year: year }, { user: 1, 'wishlist.wishes': 1, 'wishlist.isComplete': 1 }).toArray s)
 			.flatten()
+			# -- filter out nulls from the seqMap below
 			.seqMap((entry) -> this null, entry?.wishlist?.wishes?.map (wish, idx) -> { destUser: entry.user, wish: idx, wishText: wish, isListComplete: entry.wishlist.isComplete })
 			.flatten()
 			.unflatten()
-			.seq((wishes) -> callback null, wishes)
+			.seq((wishes) -> callback null, _.filter wishes, (wish) -> wish?)
 	
 	saveWishes: (year, wishes) ->
 		# piggy backing off the vote system, we're getting [ { destUser:, wish:, wishText: } ]
