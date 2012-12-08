@@ -28,6 +28,10 @@ module.exports = class Data
 	getOption: (option) -> @options[option] ? Data.defaultOptions[option]
 	
 	# News
+	getAllNews: (year, callback) ->
+		throw 'callback required' if not callback?
+		@newsCollection.find({ year: year }).sort({ date: -1}).toArray (err, news) -> callback err, news
+	
 	getNews: (year, num, callback) ->
 		throw 'callback required' if not callback?
 		@newsCollection.find({ year: year, date: { $lte: new Date() } }).sort({ date: -1}).limit(num).toArray (err, news) -> callback err, news

@@ -438,7 +438,7 @@ app.get '/admin/getNews', (req, res) ->
 		res.json 401, { success: false, error: 'Unauthorized' }
 		return
 	
-	data.getNews parseInt(req.query.year), 0, (err, news) ->
+	data.getAllNews parseInt(req.query.year), (err, news) ->
 		if err?
 			res.json 500, err
 		else
