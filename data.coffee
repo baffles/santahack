@@ -273,7 +273,33 @@ module.exports = class Data
 				throw err if err?
 				if numVotes > count * 1.5 # count * 3 / 2
 					@entriesCollection.update { user: entry.user }, { $set: { hasVoted: true } }
-			
+	
+	getEligibility: (year, callback) ->
+		seq()
+			.seq_((s) => @entriesCollection.find({ year: year }, { user: 1, isEligible: 1 }).toArray s)
+			.flatten()
+			.parMap_((s, entry) => @getUserData entry.user, (err, user) -> s err, { name: user.name, isEligible: entry.isEligible ? false })
+			.unflatten()
+			.seq((elig) -> callback null, elig)
+			.catch((err) -> callback err, null)
+	
+	clearEligibility: (year) ->
+		@entriesCollection.update { year: year }, { $unset: { isEligible: '' } }, false, true
+
+	updateEligibility: (year) ->
+		@entriesCollection.update { year: year, 'wishlist.isComplete': true, hasVoted: true, 'wishlist.votes': { $exists: true }, $where: "(this.wishlist.votes[0].score + this.wishlist.votes[1].score + this.wishlist.votes[2].score) / (this.wishlist.votes[0].count + this.wishlist.votes[1].count + this.wishlist.votes[2].count) > 2.5" }, { $set: { isEligible: true } }, false, true
+	
+	getWishlistVotes: (year, callback) ->
+		seq()
+			.seq_((s) => @entriesCollection.find({ year: entry.year, isEligible: true }, { user: 1, 'wishlist.votesCast': 1 }).toArray s)
+			.forEach((entries) -> @vars.eligible = entries.map entry -> entry.user)
+			.flatten()
+			.parMap((entry) -> this null, entry.votesCast.map (vote, idx) -> { sourceUser: entry.user, destUser: vote.destUser, score: vote.score })
+			.flatten()
+			.parFilter((vote, i) -> @into(i) if @eligible[vote.destUser]?)
+			.unflatten()
+			.seq((votes) -> callback null, votes)
+			.catch((err) -> callback err, null)	
 	
 	# Users
 	# upgrade user object with helper functions from this class

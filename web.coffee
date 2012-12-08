@@ -9,6 +9,7 @@ lib =
 	seq: require 'seq'
 	accSso: require './acc-sso'
 	data: require './data'
+	pairings: require './pairings'
 	voteID: require './vote-id'
 
 _ = lib.underscore._
@@ -510,6 +511,56 @@ app.post '/admin/saveWishes', (req, res) ->
 	# todo: add error catching/reporting
 	data.saveWishes parseInt(req.query.year), wishes
 	
+	res.json { success: true }
+
+app.get '/admin/getEligibility', (req, res) ->
+	if not req.session?.user?.isAdmin
+		res.json 401, { success: false, error: 'Unauthorized' }
+		return
+	if not req.query.year?
+		res.json { success: false, error: 'Missing year parameter' }
+		return
+	
+	lib.seq()
+		.seq(() -> data.getEligibility parseInt(req.query.year), this)
+		.seq((eligibility) -> res.json eligibility)
+		.catch((err) -> res.json 500, { success: false, error: err })
+
+app.post '/admin/updateEligibility', (req, res) ->
+	if not req.session?.user?.isAdmin
+		res.json 401, { success: false, error: 'Unauthorized' }
+		return
+	if not req.query.year?
+		res.json { success: false, error: 'Missing year parameter' }
+		return
+	if not req.body.mode?
+		res.json { success: false, error: 'Missing mode in body' }
+		return
+	
+	switch req.body.mode
+		when 'update' then data.updateEligibility parseInt req.query.year
+		when 'clear' then data.clearEligibility parseInt req.query.year
+
+	res.json { success: true }
+
+app.post '/admin/runPairing', (req, res) ->
+	if not req.session?.user?.isAdmin
+		res.json 401, { success: false, error: 'Unauthorized' }
+		return
+	if not req.query.year?
+		res.json { success: false, error: 'Missing year parameter' }
+		return
+
+	wishes = []
+
+	for id, text of req.body
+		item = voteID.fromID(id)
+		if item?.destUser? and item?.wish?
+			wishes.push { destUser: item.destUser, wish: item.wish, wishText: text }
+
+	# todo: add error catching/reporting
+	data.saveWishes parseInt(req.query.year), wishes
+
 	res.json { success: true }
 
 app.listen process.env.PORT
