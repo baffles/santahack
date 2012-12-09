@@ -116,30 +116,43 @@ module.exports = class Data
 			entry.getVoteItems = (callback) => @getVoteItems entry, callback
 			entry.saveVotes = (votes) => @saveVotes entry, votes
 			
-			if entry.wishlist?
-				entry.wishlist.getMachinePerformanceDisplay = () ->
-					switch entry.wishlist.machinePerformance
-						when 'lowend' then 'low end'
-						when 'midrange' then 'mid-range'
-						when 'highend' then 'high end'
-						else 'unknown'
-				
-				entry.wishlist.getPreferredOSDisplay = () ->
-					switch entry.wishlist.preferredOS
+			entry.getAssignment = (callback) =>
+				if entry.assignment?
+					seq()
+						.par_((s) => @getUserWishlist entry.assignment, entry.year, s.into 'wishlist')
+						.par_((s) => @getUserData entry.assignment, s.into 'user')
+						.catch((err) -> callback err, null)
+						.seq(() -> callback null, @vars)
+			
+			Data.upgradeWishlist entry.wishlist
+		entry
+	
+	@upgradeWishlist: (wishlist) ->
+		if wishlist?
+			wishlist.getMachinePerformanceDisplay = () ->
+				switch wishlist.machinePerformance
+					when 'lowend' then 'low end'
+					when 'midrange' then 'mid-range'
+					when 'highend' then 'high end'
+					else 'unknown'
+		
+			wishlist.getPreferredOSDisplay = () ->
+				switch wishlist.preferredOS
+					when 'windows' then 'Windows&reg;'
+					when 'osx' then 'OS X&reg;'
+					when 'linux' then 'Linux'
+					else 'unknown'
+		
+			wishlist.getDevListDisplay = () ->
+				oses = for os in wishlist.canDev
+					switch os
 						when 'windows' then 'Windows&reg;'
 						when 'osx' then 'OS X&reg;'
 						when 'linux' then 'Linux'
 						else 'unknown'
-				
-				entry.wishlist.getDevListDisplay = () ->
-					oses = for os in entry.wishlist.canDev
-						switch os
-							when 'windows' then 'Windows&reg;'
-							when 'osx' then 'OS X&reg;'
-							when 'linux' then 'Linux'
-							else 'unknown'
-					oses.join ', '
-		entry
+				oses.join ', '
+		
+		wishlist
 	
 	downgradeEntry: (entry) ->
 		if entry?
@@ -149,6 +162,7 @@ module.exports = class Data
 			delete entry.isWishlistComplete
 			delete entry.getVoteItems
 			delete entry.saveVotes
+			delete entry.getAssignment
 			
 			if entry.wishlist?
 				delete entry.wishlist.getMachinePerformanceDisplay
@@ -175,6 +189,10 @@ module.exports = class Data
 	getUserCompetitionEntries: (user, callback) ->
 		throw 'callback required' if not callback?
 		@entriesCollection.find({ user: user.id }).toArray (err, entries) => callback err, entries.map (entry) => @upgradeEntry entry
+	
+	getUserWishlist: (userid, year, callback) ->
+		throw 'callback required' if not callback?
+		@entriesCollection.findOne { user: userid, year }, (err, entry) -> callback err, Data.upgradeWishlist entry?.wishlist
 	
 	saveCompetitionEntry: (entry) ->
 		# clean up entry

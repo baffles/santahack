@@ -150,6 +150,7 @@ lib.marked.setOptions
 app.locals.markdown = lib.marked
 
 app.locals.friendlyDate = (date) -> lib.moment(date).fromNow()
+app.locals.displayDate = (date) -> lib.moment(date).calendar()
 app.locals.utcDate = (date) -> lib.moment(date).utc().format 'dddd, MMMM Do YYYY, h:mm:ss a [UTC]'
 app.locals.displayTime = () -> lib.moment().utc().format 'MMM D[,] YYYY, h:mm A [UTC]'
 app.locals.getGenerationTime = (requestTime) -> lib.moment().diff(lib.moment(requestTime), 'seconds', true)
@@ -372,7 +373,15 @@ app.post /^\/(?:\d{4}\/)?vote$/, (req, res) ->
 				res.redirect res.locals.genLink '/vote'
 
 # /task
-#todo later
+app.get /^\/(?:\d{4}\/)?task$/, (req, res, next) ->
+	if not req.needsYearRedirect()
+		lib.seq()
+			.seq(() -> req.competitionEntry?.getAssignment this)
+			.seq((task) ->
+				res.render 'task',
+					title: 'SantaHack'
+					task: task
+			).catch((err) -> next err)
 
 # /submit
 #todo later

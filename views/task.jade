@@ -1,0 +1,57 @@
+extends layout
+
+block scripts
+	script(type='text/javascript', src='/static/js/vote.min.js')
+
+block content
+	h2 Task
+	- var compState = competition.getState()
+	if session.user == null
+		p Please 
+			a(href='/login?return=' + returnURL) login
+			|  to vote.
+	else if compState.seq >= competitionStates.Development.seq
+		if competitionEntry == null || !competitionEntry.isEligible
+			p You did not join and fulfill all the requirements for SantaHack #{year}. Better luck next year!
+		else
+			//
+				|||if in development
+				<h3>Development</h3>
+				<p>You've been given a week to develop this game. Review the <a href="{{ path('rules') }}">rules</a> if necessary, then get cracking!</p>
+				<p>We're still putting the finishing touches on the site, so <strong>check back later in the week</strong> for a page to submit your entry on (it should go live by mid-week at the latest). A link will appear on the navigation bar at the top of the page, on this page itself, and there will be a news item posted about it. You won't be able to miss it!</p>
+				{% elseif state >= constant('BAF\\SantaHackBundle\\Entity\\CompetitionState::DevelopmentGrace') %}
+				<h3>Results</h3>
+				{% if submission != null %}
+				<p>You submitted <strong>{{ submission.getName() }}</strong>, hopefully fulfilling the wishes of <strong>{{ task.getUser().getName() }}</strong>! Good job!</p>
+				{% else %}
+				<p>Unfortunately, you never submitted a game for <strong>{{ task.getUser().getName() }}</strong>. But don't worry, we'll give him another game he should like. Better luck next year!</p>
+			h3 Your Task
+			p Santa and the elves need your help! They have sent you a specific task, and request your assistance for the week. In return for your
+				| willingness to help, Santa will make sure you receive a gift of your own.
+			p Your task, should you choose to accept it, is to act as a 
+				i Secret Santa
+				|  and create a game for 
+				strong= task.user.name
+				| . The game should be suitable for playing on a 
+				strong #{task.wishlist.getMachinePerformanceDisplay()} #{task.wishlist.getPreferredOSDisplay()} machine
+				| , and implement at least one of the following ideas:
+				ul
+					for wish in task.wishlist.wishes
+						li: strong= wish
+			if compState.seq < competitionStates.DevelopmentIntermission.seq
+				h3 Development
+				p You have until 
+					strong= displayDate(competition.devEnd)
+					|  to develop this game. Review the 
+					a(href=genLink('/rules')) rules
+					|  if necessary, then get to work!
+				p Check back in here towards the end of the competition for instructions on submitting your entry.
+				p Blurb about blogs.
+			else
+				h3 Results
+				if submission != null
+					p You submitted
+				else
+					p You suck
+	else
+		p Development for SantaHack #{year} is not currently in progress yet.
