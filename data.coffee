@@ -163,6 +163,7 @@ module.exports = class Data
 					switch os
 						when 'windows' then 'Windows&reg;'
 						when 'osx' then 'OS X&reg;'
+						when 'mac' then 'OS X&reg;'
 						when 'linux' then 'Linux'
 						else 'unknown'
 				oses.join ', '
