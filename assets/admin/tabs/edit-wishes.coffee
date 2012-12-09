@@ -54,7 +54,7 @@ class EditWishesTab extends Tab
 											beforeSend: () ->
 												$statusIcon.iconSaving()
 											success: (reply) =>
-												if !reply.success
+												if not reply?.success
 													alert "Error saving wish:\n#{reply.error}"
 													$statusIcon.iconError()
 												else

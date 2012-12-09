@@ -147,7 +147,7 @@ class CompetitionInfoTab extends Tab
 			data: competition
 			dataType: 'json'
 			success: (reply) =>
-				if !reply.success
+				if not reply?.success
 					alert "Error saving competition:\n#{reply.error}"
 					@$saveButton.button 'reset'
 				else

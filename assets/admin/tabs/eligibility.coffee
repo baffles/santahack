@@ -41,9 +41,9 @@ class EligibilityTab extends Tab
 			data: { mode }
 			dataType: 'json'
 			success: (reply) =>
-				if !reply.success
+				if not reply?.success
 					alert "Error updating eligibility:\n#{reply.error}"
 				else
 					@loadData @curYear
 			error: (req, status, errMsg) =>
-				alert "Error updating eligibility:\n#{reply.error}"
+				alert "Error updating eligibility: #{status}\n#{errMsg}"

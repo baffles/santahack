@@ -100,7 +100,7 @@ class NewsTab extends Tab
 					data: post
 					dataType: 'json'
 					success: (reply) =>
-						if !reply.success
+						if not reply?.success
 							alert "Error saving news:\n#{reply.error}"
 							$saveButton.button 'reset'
 						else
@@ -148,7 +148,7 @@ class NewsTab extends Tab
 					data: post
 					dataType: 'json'
 					success: (reply) =>
-						if !reply.success
+						if not reply?.success
 							alert "Error removing news:\n#{reply.error}"
 							$delButton.button 'reset'
 						else
