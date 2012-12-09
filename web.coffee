@@ -209,7 +209,7 @@ app.get '/info.json', (req, res, next) ->
 				participants: @vars.participantInfo.participants
 				completeWishlists: @vars.participantInfo.completeWishlists
 				hasVoted: @vars.participantInfo.hasVoted
-				eligibleParticipants: 0
+				eligibleParticipants: @vars.participantInfo.eligibleParticipants
 				blogEntries: 0
 				entriesSubmitted: 0
 				currentPhase: @vars.competition.getState().jsonDisplay

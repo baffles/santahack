@@ -179,6 +179,7 @@ module.exports = class Data
 			.par_((s) => @entriesCollection.find({ year: competition.year }).count s.into 'participants')
 			.par_((s) => @entriesCollection.find({ year: competition.year, 'wishlist.isComplete': true }).count s.into 'completeWishlists')
 			.par_((s) => @entriesCollection.find({ year: competition.year, 'wishlist.isComplete': true, 'hasVoted': true }).count s.into 'hasVoted')
+			.par_((s) => @entriesCollection.find({ year: competition.year, isEligible: true }).count s.into 'eligibleParticipants')
 			.catch((err) -> callback err, null)
 			.seq_((s) -> callback null, s.vars)
 	
