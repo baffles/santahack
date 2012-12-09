@@ -550,18 +550,32 @@ app.post '/admin/runPairing', (req, res) ->
 	if not req.query.year?
 		res.json { success: false, error: 'Missing year parameter' }
 		return
-
-	wishes = []
-
-	for id, text of req.body
-		item = voteID.fromID(id)
-		if item?.destUser? and item?.wish?
-			wishes.push { destUser: item.destUser, wish: item.wish, wishText: text }
-
-	# todo: add error catching/reporting
-	data.saveWishes parseInt(req.query.year), wishes
-
-	res.json { success: true }
+	
+	lib.seq()
+		.seq(() -> data.getEligibleWishVotes parseInt(req.query.year), this)
+		.seq((votes) ->
+			if votes.length > 0
+				# i hate that this is so unreadable, but it maps the huge list of individual wish votes into an array of { sourceUser, destUser, wishlistScore: average of wish votes }
+				scores = _.flatten _.map _.groupBy(votes, 'sourceUser'), (set, sourceUser) -> _.map _.groupBy(set, 'destUser'), (votes, destUser) -> { sourceUser, destUser, wishlistScore: _.reduce(votes.map((vote) -> vote.score), ((sum, score) -> sum + score), 0) / votes.length }
+			
+				# find optimal pairings
+				results = lib.pairings.optimizePairings scores
+			
+				# store results
+				data.savePairings parseInt(req.query.year), results
+			
+				# display result summary
+				averagePairingScore = Math.round((_.reduce(results, ((sum, pair) -> sum + pair.wishlistScore), 0) / (10 * results.length)) * 100) / 100
+				averageVoteScore = Math.round((_.reduce(scores, ((sum, vote) -> sum + vote.wishlistScore), 0) / scores.length) * 100) / 100
+				maxVoteScores = _.map(_.groupBy(scores, 'sourceUser'), (set) -> _.reduce(set, ((max, vote) -> Math.max(max, vote.wishlistScore)), 0))
+				averageMaxVoteScore = Math.round((_.reduce(maxVoteScores, ((sum, score) -> sum + score), 0) / maxVoteScores.length) * 100) / 100
+				aboveAveragePercent = Math.round (averagePairingScore * 100 / averageVoteScore) - 100
+				percentOfMax = Math.round averagePairingScore * 100 / averageMaxVoteScore
+			
+				res.json { success: true, summary: "Pairing complete.\n\nAverage pairing score: #{averagePairingScore}\nAverage overall wishlist score: #{averageVoteScore}\nAverage top-choice score: #{averageMaxVoteScore}\nOn average, #{aboveAveragePercent}% above average vote\nOn average, pairing was scored #{percentOfMax}% of most-desired score" }
+			else
+				res.json { success: true, summary: 'Nothing done; not enough eligible participants.' }
+		).catch((err) -> res.json 500, { success: false, error: err })
 
 app.listen process.env.PORT
 console.log "Express server at http://localhost:#{process.env.PORT}/ in #{process.env.ENV} mode" # printing app.settings.env doesn't work, wtf?

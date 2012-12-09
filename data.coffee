@@ -289,17 +289,21 @@ module.exports = class Data
 	updateEligibility: (year) ->
 		@entriesCollection.update { year: year, 'wishlist.isComplete': true, hasVoted: true, 'wishlist.votes': { $exists: true }, $where: "(this.wishlist.votes[0].score + this.wishlist.votes[1].score + this.wishlist.votes[2].score) / (this.wishlist.votes[0].count + this.wishlist.votes[1].count + this.wishlist.votes[2].count) > 2.5" }, { $set: { isEligible: true } }, false, true
 	
-	getWishlistVotes: (year, callback) ->
+	getEligibleWishVotes: (year, callback) ->
 		seq()
-			.seq_((s) => @entriesCollection.find({ year: entry.year, isEligible: true }, { user: 1, 'wishlist.votesCast': 1 }).toArray s)
-			.forEach((entries) -> @vars.eligible = entries.map entry -> entry.user)
+			.seq_((s) => @entriesCollection.find({ year: year, isEligible: true }, { user: 1, 'votesCast': 1 }).toArray s)
+			.forEach((entries) -> @into('eligible') null, entries.map (entry) -> entry.user)
 			.flatten()
-			.parMap((entry) -> this null, entry.votesCast.map (vote, idx) -> { sourceUser: entry.user, destUser: vote.destUser, score: vote.score })
+			.seqMap((entry) -> this null, entry.votesCast.map (vote, idx) => { sourceUser: entry.user, destUser: vote.destUser, score: vote.score, isEligible: @vars.eligible.indexOf(vote.destUser) >= 0 })
 			.flatten()
-			.parFilter((vote, i) -> @into(i) if @eligible[vote.destUser]?)
+			.parFilter((vote, i) -> @into(i) null, if vote.isEligible then vote else null)
 			.unflatten()
 			.seq((votes) -> callback null, votes)
-			.catch((err) -> callback err, null)	
+			.catch((err) -> callback err, null)
+	
+	savePairings: (year, pairings) ->
+		for pairing in pairings
+			@entriesCollection.update({ year: year, user: pairing.sourceUser}, { $set: { assignment: pairing.destUser } })
 	
 	# Users
 	# upgrade user object with helper functions from this class

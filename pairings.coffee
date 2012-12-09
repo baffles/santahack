@@ -30,12 +30,12 @@ module.exports =
 		
 		for sourceUser, votes of _.groupBy votes, 'sourceUser'
 			row = []
-			row[userMap[vote.destUser]] = vote.wishlistScore for vote in votes
-			(row[i] = -44 if not row[i]?) for i in [0..size-1]
-			row[userMap[sourceUser]] = -94 # user should never get assigned themselves
+			row[userMap[vote.destUser]] = vote.wishlistScore * 10 | 0 for vote in votes
+			(row[i] = -440 if not row[i]?) for i in [0..size-1]
+			row[userMap[sourceUser]] = -940 # user should never get assigned themselves
 			matrix[userMap[sourceUser]] = row
 		
-		cMatrix = hungarian.makeCostMatrix matrix, (val) -> 6 - val # best vote is 5, so that gets a cost of 1. ends up 100 for self-assignment, and 50 for anything user didn't vote on
+		cMatrix = hungarian.makeCostMatrix matrix, (val) -> 60 - val # best vote is 5, so that gets a cost of 10. ends up 1000 for self-assignment, and 500 for anything user didn't vote on
 		
 		results = new hungarian().compute cMatrix
 		assignments = []
