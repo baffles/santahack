@@ -195,8 +195,7 @@ app.get '/admin', (req, res) ->
 		res.send 401, 'Unauthorized.'
 		return
 	
-	res.render 'admin',
-		title: 'SantaHack Admin'
+	res.render 'admin'
 
 app.get '/info.json', (req, res, next) ->
 	lib.seq()
@@ -231,7 +230,7 @@ app.get /^\/(?:\d{4}\/)?home$/, (req, res, next) ->
 			.seq(() -> data.getNews req.year, 5, this)
 			.seq((news) ->
 				res.render 'home',
-					title: 'SantaHack'
+					title: "SantaHack #{req.year}"
 					posts: news
 			).catch((err) -> next err)
 
@@ -239,7 +238,7 @@ app.get /^\/(?:\d{4}\/)?home$/, (req, res, next) ->
 app.get /^\/(?:\d{4}\/)?rules$/, (req, res) ->
 	if not req.needsYearRedirect()
 		res.render 'rules',
-			title: 'SantaHack'
+			title: "SantaHack #{req.year} Rules"
 
 # /participants
 app.get /^\/(?:\d{4}\/)?participants$/, (req, res, next) ->
@@ -251,7 +250,7 @@ app.get /^\/(?:\d{4}\/)?participants$/, (req, res, next) ->
 			.unflatten()
 			.seq((participants) ->
 				res.render 'participants',
-					title: 'SantaHack'
+					"SantaHack #{req.year} Participants"
 					participants: _.sortBy(participants, (p) -> p.name.toLowerCase())
 			).catch((err) -> next err)
 
@@ -277,14 +276,14 @@ app.post /^\/(?:\d{4}\/)?entry$/, (req, res) ->
 app.get /^\/(?:\d{4}\/)?withdraw$/, (req, res) ->
 	if not req.needsYearRedirect()
 		res.render 'withdraw',
-			title: 'SantaHack'
+			"SantaHack #{req.year}"
 
 # /wishlist
 app.get /^\/(?:\d{4}\/)?wishlist$/, (req, res) ->
 	if not req.needsYearRedirect()
 		entry = req.competitionEntry
 		res.render 'wishlist',
-			title: 'SantaHack',
+			title: "SantaHack #{req.year} Wishlist"
 			formVals: getWishlistFormVals req.competitionEntry
 			showWarnMsg: req.competition.getState() isnt lib.data.competitionStates.Registration
 
@@ -343,7 +342,7 @@ app.get /^\/(?:\d{4}\/)?vote$/, (req, res, next) ->
 				voteItems = voteItems?.map (item) -> { id: voteID.toID(item), wishText: item.wishText, score: item.score }
 				
 				res.render 'vote',
-					title: 'SantaHack'
+					title: "SantaHack #{req.year} Voting"
 					voteItems: _.shuffle voteItems
 					showWarnMsg: req.competition.getState() isnt lib.data.competitionStates.Voting
 			).catch((err) -> next err)
@@ -379,7 +378,7 @@ app.get /^\/(?:\d{4}\/)?task$/, (req, res, next) ->
 			.seq(() -> req.competitionEntry?.getAssignment this)
 			.seq((task) ->
 				res.render 'task',
-					title: 'SantaHack'
+					title: "SantaHack #{req.year} Task"
 					task: task
 			).catch((err) -> next err)
 
