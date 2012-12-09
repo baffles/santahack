@@ -227,12 +227,26 @@ app.get '/info.json', (req, res, next) ->
 app.get /^\/(?:\d{4}\/)?home$/, (req, res, next) ->
 	if not req.needsYearRedirect()
 		lib.seq()
-			.seq(() -> data.getNews req.year, 5, this)
-			.seq((news) ->
+			.par('news', () -> data.getNews req.year, 5, (if req.query.page? then parseInt(req.query.page) * 5 else 0), this)
+			.par('count', () -> data.getNewsCount req.year, this)
+			.seq(() ->
 				res.render 'home',
 					title: "SantaHack #{req.year}"
-					posts: news
+					posts: @vars.news
+					pageCount: Math.ceil @vars.count / 5
 			).catch((err) -> next err)
+
+app.get /^\/(?:\d{4}\/)?news.json$/, (req, res) ->
+	if not req.needsYearRedirect()
+		lib.seq()
+			.seq(() -> data.getNews req.year, 5, (if req.query.page? then parseInt(req.query.page) * 5 else 0), this)
+			.seq((news) ->
+				for post in news
+					post.utcDate = app.locals.utcDate post.date
+					post.friendlyDate = app.locals.friendlyDate post.date
+					post.html = app.locals.markdown post.content
+				res.json news
+			).catch((err) -> res.json 500, {})
 
 # /rules
 app.get /^\/(?:\d{4}\/)?rules$/, (req, res) ->

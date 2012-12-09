@@ -30,11 +30,15 @@ module.exports = class Data
 	# News
 	getAllNews: (year, callback) ->
 		throw 'callback required' if not callback?
-		@newsCollection.find({ year: year }).sort({ date: -1}).toArray (err, news) -> callback err, news
+		@newsCollection.find({ year: year }).sort({ date: -1}).toArray callback
 	
-	getNews: (year, num, callback) ->
+	getNews: (year, num, offset, callback) ->
 		throw 'callback required' if not callback?
-		@newsCollection.find({ year: year, date: { $lte: new Date() } }).sort({ date: -1}).limit(num).toArray (err, news) -> callback err, news
+		@newsCollection.find({ year: year, date: { $lte: new Date() } }, { _id: 0 }).sort({ date: -1}).skip(offset).limit(num).toArray callback
+	
+	getNewsCount: (year, callback) ->
+		throw 'callback required' if not callback?
+		@newsCollection.find({ year: year, date: { $lte: new Date() } }).count callback
 	
 	saveNews: (post) ->
 		if post._id?
@@ -73,7 +77,7 @@ module.exports = class Data
 	
 	getCompetitionList: (callback) ->
 		throw 'callback required' if not callback?
-		@competitionsCollection.find({}, { year: 1 }).sort({ year: -1 }).map((year) -> year.year).toArray (err, years) -> callback err, years
+		@competitionsCollection.find({}, { year: 1 }).sort({ year: -1 }).map((year) -> year.year).toArray callback
 	
 	saveCompetition: (competition) ->
 		if competition.year?
@@ -103,6 +107,17 @@ module.exports = class Data
 			throw "unknown competition state"
 	
 	# Entries
+	###
+		user:
+		year:
+		wishlist:
+		hasVoted:
+		isEligible:
+		votesCast:
+		assignment:
+		blogEntries:
+		submission:
+	###
 	upgradeEntry: (entry) ->
 		if entry?
 			entry.checkWishlist = () ->
@@ -199,16 +214,6 @@ module.exports = class Data
 		# clean up entry
 		if entry.clean?
 			entry.clean()
-		
-		###entry = 
-			user: entry.user
-			year: entry.year
-			wishlist: entry.wishlist
-			isEligible: entry.isEligible
-			votes: entry.votes
-			assignment: entry.assignment
-			log: entry.log
-			submission: entry.submission###
 		
 		if entry.user? and entry.year?
 			@entriesCollection.update { user: entry.user, year: entry.year }, { $set: entry }, true, false
@@ -334,7 +339,7 @@ module.exports = class Data
 	
 	getUserData: (id, callback) ->
 		throw 'callback required' if not callback?
-		@usersCollection.findOne { id: id }, (err, user) -> callback err, user
+		@usersCollection.findOne { id: id }, callback
 	
 	updateUserData: (user) ->
 		@usersCollection.update { id: user.id }, { $set: user }, true, false

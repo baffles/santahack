@@ -3,6 +3,9 @@ extends layout
 block additionalCSS
 	link(rel='stylesheet', href='/static/css/news.css')
 
+block scripts
+	script(type='text/javascript', src='/static/js/news.min.js')
+
 mixin newsPost(post)
 	.news-item
 		h3= post.title
@@ -12,5 +15,10 @@ mixin newsPost(post)
 block content
 	h2 News #{year}
 	#news
-		- each post in posts
+		for post in posts
 			mixin newsPost(post)
+	if pageCount > 1
+		.pagination
+			ul
+				- for(var page = 0; page < pageCount; page++)
+					li: a(href=genLink("/home?page=#{page}"), data-page=page)= page + 1
