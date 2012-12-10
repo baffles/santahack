@@ -264,7 +264,7 @@ app.get /^\/(?:\d{4}\/)?participants$/, (req, res, next) ->
 			.unflatten()
 			.seq((participants) ->
 				res.render 'participants',
-					"SantaHack #{req.year} Participants"
+					title: "SantaHack #{req.year} Participants"
 					participants: _.sortBy(participants, (p) -> p.name.toLowerCase())
 			).catch((err) -> next err)
 
@@ -290,7 +290,7 @@ app.post /^\/(?:\d{4}\/)?entry$/, (req, res) ->
 app.get /^\/(?:\d{4}\/)?withdraw$/, (req, res) ->
 	if not req.needsYearRedirect()
 		res.render 'withdraw',
-			"SantaHack #{req.year}"
+			title: "SantaHack #{req.year}"
 
 # /wishlist
 app.get /^\/(?:\d{4}\/)?wishlist$/, (req, res) ->
