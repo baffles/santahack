@@ -117,7 +117,7 @@ app.use (req, res, next) ->
 		res.locals.warnMsg = 'It looks like your wishlist is incomplete. Please complete it in time to ensure you are allowed to participate!'
 		res.locals.showWarnMsg = true
 	else if req.competition?.getState() is lib.data.competitionStates.Voting and req.competitionEntry?.isWishlistComplete() and not req.competitionEntry.hasVoted
-		res.locals.warnMsg = 'It looks like you haven\'t voted on at least half of the descriptions yet. Please submit your votes in time to ensure you are eligible!'
+		res.locals.warnMsg = 'It looks like you haven\'t voted on at least half of the game ideas yet. Please submit your votes in time to ensure you remain eligible!'
 		res.locals.showWarnMsg = true
 	next()
 
@@ -358,6 +358,7 @@ app.get /^\/(?:\d{4}\/)?vote$/, (req, res, next) ->
 				res.render 'vote',
 					title: "SantaHack #{req.year} Voting"
 					voteItems: _.shuffle voteItems
+					startedVoting: _.any(voteItems, (vote) -> vote.score?)
 					showWarnMsg: req.competition.getState() isnt lib.data.competitionStates.Voting
 			).catch((err) -> next err)
 
