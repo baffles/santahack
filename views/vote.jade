@@ -13,6 +13,7 @@ block content
 		if competitionEntry == null || !competitionEntry.isWishlistComplete()
 			p You did not join and submit a complete wishlist for SantaHack #{year}, so you are not eligible for voting.
 		else
+			p= startedVoting
 			p Please vote on the following game ideas. 
 				strong Keep the scoring guidelines from the 
 					a(href=genLink('/rules')) rules
@@ -34,7 +35,7 @@ block content
 								th.hide.status-column
 						tbody
 							for item in voteItems
-								tr
+								tr(class=startedVoting && item.score == null ? 'warning' : '')
 									td= item.wishText
 									td: input(type='radio', name=item.id, value=1, title='Awful idea', checked=item.score == 1)
 									td: input(type='radio', name=item.id, value=2, title='Bad idea', checked=item.score == 2)
