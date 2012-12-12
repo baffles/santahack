@@ -312,7 +312,12 @@ module.exports = class Data
 		@entriesCollection.update { year: year }, { $unset: { isEligible: '' } }, false, true
 
 	updateEligibility: (year) ->
-		@entriesCollection.update { year: year, 'wishlist.isComplete': true, hasVoted: true, 'wishlist.votes': { $exists: true }, $where: "(this.wishlist.votes[0].score + this.wishlist.votes[1].score + this.wishlist.votes[2].score) / (this.wishlist.votes[0].count + this.wishlist.votes[1].count + this.wishlist.votes[2].count) > 2.5" }, { $set: { isEligible: true } }, false, true
+		@entriesCollection.update { year: 2012, 'wishlist.isComplete': true, hasVoted: true, 'wishlist.votes': { $exists: true }, $where: () ->
+				for i, vote of @wishlist.votes
+					if Math.round(10 * vote.score / vote.count) >= 25
+						return true
+				return false
+			}, { $set: { isEligible: true } }, false, true
 	
 	getEligibleWishVotes: (year, callback) ->
 		seq()
