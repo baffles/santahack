@@ -104,7 +104,7 @@ block content
 				ul
 					for wish, idx in competitionEntry.wishlist.wishes
 						li
-							- var wishScore = competitionEntry.wishlist.votes != null && competitionEntry.wishlist.votes[idx] != null ? competitionEntry.wishlist.votes[idx].score / competitionEntry.wishlist.votes[idx].count : null
+							- var wishScore = competitionEntry.wishlist.votes != null && competitionEntry.wishlist.votes[idx] != null ? Math.round(10 * competitionEntry.wishlist.votes[idx].score / competitionEntry.wishlist.votes[idx].count) / 10 : null
 							strong= competitionEntry.wishlist.wishes[idx]
 							|  - 
 							if wishScore != null
