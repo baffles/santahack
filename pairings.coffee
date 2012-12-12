@@ -9,7 +9,19 @@ in: [ { sourceUser: 1, destUser: 2, wishlistScore: 2 },
   { sourceUser: 3, destUser: 1, wishlistScore: 4 },
   { sourceUser: 3, destUser: 2, wishlistScore: 1 } ]
 
-results = module.exports.optimizePairings votes
+prefOS = {}
+prefOS[1] = 'windows'
+prefOS[2] = 'windows'
+prefOS[3] = 'windows'
+prefOS[4] = 'windows'
+
+canDev = {}
+canDev[1] = { windows: true, linux: true, osx: true }
+canDev[2] = { windows: true, linux: true, osx: true }
+canDev[3] = { windows: true, linux: true, osx: true }
+canDev[4] = { windows: true, linux: true, osx: true }
+
+results = module.exports.optimizePairings votes, canDev, prefOS
 
 out: [ { sourceUser: 1, destUser: 2, wishlistScore: 2 },
   { sourceUser: 2, destUser: 3, wishlistScore: 4 },
@@ -17,7 +29,7 @@ out: [ { sourceUser: 1, destUser: 2, wishlistScore: 2 },
 ###
 
 module.exports =
-	optimizePairings: (votes) -> # [ { sourceUser:, destUser:, wishlistScore: } ]
+	optimizePairings: (votes, canDev, prefOS) -> # [ { sourceUser:, destUser:, wishlistScore: } ]
 		matrix = []
 		id = 0
 		userMap = []
@@ -30,8 +42,11 @@ module.exports =
 		
 		for sourceUser, votes of _.groupBy votes, 'sourceUser'
 			row = []
-			row[userMap[vote.destUser]] = vote.wishlistScore * 10 | 0 for vote in votes
-			(row[i] = -440 if not row[i]?) for i in [0..size-1]
+			row[i] = -440 for i in [0..size-1] # default of -500 if user didn't vote
+			row[userMap[vote.destUser]] = Math.round(vote.wishlistScore * 10) for vote in votes
+			for vote in votes
+				if not canDev[sourceUser][prefOS[vote.destUser]]
+					row[userMap[vote.destUser]] -= 690 # cost of 750 if canDev doesn't match
 			row[userMap[sourceUser]] = -940 # user should never get assigned themselves
 			matrix[userMap[sourceUser]] = row
 		

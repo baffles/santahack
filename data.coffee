@@ -321,7 +321,7 @@ module.exports = class Data
 	
 	getEligibleWishVotes: (year, callback) ->
 		seq()
-			.seq_((s) => @entriesCollection.find({ year: year, isEligible: true }, { user: 1, 'votesCast': 1 }).toArray s)
+			.seq_((s) => @entriesCollection.find({ year, isEligible: true }, { user: 1, votesCast: 1 }).toArray s)
 			.forEach((entries) -> @into('eligible') null, entries.map (entry) -> entry.user)
 			.flatten()
 			.seqMap((entry) -> this null, entry.votesCast.map (vote, idx) => { sourceUser: entry.user, destUser: vote.destUser, score: vote.score, isEligible: @vars.eligible.indexOf(vote.destUser) >= 0 })
@@ -329,6 +329,12 @@ module.exports = class Data
 			.parFilter((vote, i) -> @into(i) null, if vote.isEligible then vote else null)
 			.unflatten()
 			.seq((votes) -> callback null, votes)
+			.catch((err) -> callback err, null)
+	
+	getCanDevInfo: (year) ->
+		seq()
+			.seq_((s) => @entriesCollection.find({ year, isEligible: true }, { user: 1, 'wishlist.canDev' : 1, 'wishlist.preferredOS': 1 }).toArray s)
+			.seq((canDev) -> callback null, canDev)
 			.catch((err) -> callback err, null)
 	
 	savePairings: (year, pairings) ->

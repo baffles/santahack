@@ -575,14 +575,26 @@ app.post '/admin/runPairing', (req, res) ->
 		return
 	
 	lib.seq()
-		.seq(() -> data.getEligibleWishVotes parseInt(req.query.year), this)
-		.seq((votes) ->
+		.seq('votes', () -> data.getEligibleWishVotes parseInt(req.query.year), this)
+		.seq('canDev', () -> data.getCanDevInfo parseInt(req.query.year), this)
+		.seq(() ->
+			votes = @vars.votes
+			canDev = {}
+			prefOS = {}
+			
+			for user in @vars.canDev
+				prefOS[user.user] = user.wishlist.preferredOS
+				canDev[user.user] = cdr = {}
+				cdr['windows'] = user.wishlist.canDev.indexOf('windows') >= 0
+				cdr['linux'] = user.wishlist.canDev.indexOf('linux') >= 0
+				cdr['osx'] = user.wishlist.canDev.indexOf('mac') >= 0
+			
 			if votes.length > 0
 				# i hate that this is so unreadable, but it maps the huge list of individual wish votes into an array of { sourceUser, destUser, wishlistScore: average of wish votes }
 				scores = _.flatten _.map _.groupBy(votes, 'sourceUser'), (set, sourceUser) -> _.map _.groupBy(set, 'destUser'), (votes, destUser) -> { sourceUser, destUser, wishlistScore: _.reduce(votes.map((vote) -> vote.score), ((sum, score) -> sum + score), 0) / votes.length }
 			
 				# find optimal pairings
-				results = lib.pairings.optimizePairings scores
+				results = lib.pairings.optimizePairings scores, canDev, prefOS
 			
 				# store results
 				data.savePairings parseInt(req.query.year), results
