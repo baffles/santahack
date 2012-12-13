@@ -108,7 +108,7 @@ block content
 							strong= competitionEntry.wishlist.wishes[idx]
 							|  - 
 							if wishScore != null
-								span(style='color: #{wishScore > 2.5 ? "green" : "red"}')= wishScore
+								span(style='color: #{wishScore >= 2.5 ? "green" : "red"}')= wishScore
 								|  / 5
 							else
 								| No votes yet
