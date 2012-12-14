@@ -35,7 +35,7 @@ html
 							li: a(href=genLink('/task')) Task
 							if compSeq <= competitionStates.DevelopmentIntermission.seq
 								li: a(href=genLink('/blog')) Blog
-								li: a(href=genLink('/submit')) Submission
+								//li: a(href=genLink('/submit')) Submission
 						if competitionEntry.isEligible && compSeq > competitionStates.DevelopmentIntermission.seq
 							li: a(href=genLink('/gift')) Your Gift
 			if typeof(warnMsg) !== 'undefined' && warnMsg != null && showWarnMsg
