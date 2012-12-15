@@ -15,7 +15,9 @@
 		"moment": "1.7.x",
 		"xml2js": "0.2.x",
 		"underscore": "1.4.x",
-		"seq": "0.3.x"
+		"seq": "0.3.x",
+		"node-uuid": "1.4.x",
+		"knox": "0.4.x"
 	},
 	"devDependencies":
 	{

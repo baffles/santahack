@@ -7,6 +7,8 @@ lib =
 	moment: require 'moment'
 	underscore: require 'underscore'
 	seq: require 'seq'
+	uuid: require 'node-uuid'
+	knox: require 'knox'
 	accSso: require './acc-sso'
 	data: require './data'
 	pairings: require './pairings'
@@ -15,6 +17,12 @@ lib =
 _ = lib.underscore._
 
 db = if process.env.MONGOHQ_URL? then new lib.mongolian process.env.MONGOHQ_URL else new lib.mongolian().db 'test'
+
+s3 = lib.knox.createClient
+	key: process.env.AWS_KEY
+	secret: process.env.AWS_SECRET
+	bucket: process.env.AWS_BUCKET
+	secure: false
 
 accSso = new lib.accSso
 data = new lib.data db
@@ -154,6 +162,10 @@ app.locals.displayDate = (date) -> lib.moment(date).calendar()
 app.locals.utcDate = (date) -> lib.moment(date).utc().format 'dddd, MMMM Do YYYY, h:mm:ss a [UTC]'
 app.locals.displayTime = () -> lib.moment().utc().format 'MMM D[,] YYYY, h:mm A [UTC]'
 app.locals.getGenerationTime = (requestTime) -> lib.moment().diff(lib.moment(requestTime), 'seconds', true)
+
+
+s3Content = process.env.AWS_CONTENT
+app.locals.getS3Url = (filename) => "http://#{s3Content}/#{filename}"
 
 # /
 app.get /^\/(\d{4})?\/?$/, (req, res) ->
@@ -396,6 +408,82 @@ app.get /^\/(?:\d{4}\/)?task$/, (req, res, next) ->
 					title: "SantaHack #{req.year} Task"
 					task: task
 			).catch((err) -> next err)
+
+# /blog
+app.get /^\/(?:\d{4}\/)?blog$/, (req, res, next) ->
+	if not req.needsYearRedirect()
+		firstPost = (if req.query.page? then parseInt(req.query.page) * 5 else 0)
+		res.render 'blog',
+			title: "SantaHack #{req.year} Blog"
+			blogPosts: _.sortBy(req.competitionEntry?.blogPosts, 'date').slice(firstPost, firstPost + 5).reverse()
+			pageCount: Math.ceil req.competitionEntry?.blogPosts?.length / 5
+
+app.post /^\/(?:\d{4}\/)?blog$/, (req, res, next) ->
+	if not req.needsYearRedirect()
+		# deal with screenshots
+		
+		blogPost =
+			date: new Date()
+			author: req.user.name
+			title: req.body.postTitle
+			content: req.body.blogPost
+		
+		validationFailed = false
+		errors = {}
+		
+		uploads = []
+		
+		# validation
+		if not blogPost.title or blogPost.title.length == 0
+			errors.title = 'Please give the blog post a title.'
+			validationFailed = true
+		
+		if not blogPost.content? or blogPost.content.length == 0
+			errors.content = 'Please enter a blog post.'
+			validationFailed = true
+		
+		for file in _.flatten req.files
+			if file.type isnt 'application/octet-stream'
+				# check file.type
+				if file.type not in [ 'image/png', 'image/jpeg', 'image/gif' ]
+					errors.screenshots = 'Only PNG, JPEG, and GIF images are allowed.'
+					validationFailed = true
+					break
+			
+				uploads.push
+					source: file.path
+					s3Name: "blogImages/#{lib.uuid.v1()}"
+					name: file.name
+		
+		if validationFailed
+			#...
+			res.send errors
+			return
+		
+		if uploads.length > 0
+			seq = lib.seq()
+		
+			for upload_ in uploads
+				do ->
+					upload = upload_
+					seq.par(() -> s3.putFile upload.source, upload.s3Name, { 'x-amz-acl': 'public-read' }, this)
+		
+			seq
+				.unflatten()
+				.seq((results) ->
+					# check all results
+					if _.every(results, (res) -> res.statusCode == 200)
+						# everything is good! let's finalize the post!
+						blogPost.screenshots = uploads.map (upload) -> { name: upload.name, s3Name: upload.s3Name }
+						
+						req.competitionEntry.addBlogPost blogPost
+						res.redirect res.locals.genLink '/blog'
+					else
+						next "Error uploading to S3 - #{res.statusCode}"
+				).catch(next)
+		else
+			req.competitionEntry.addBlogPost blogPost
+			res.redirect res.locals.genLink '/blog'
 
 # /submit
 #todo later

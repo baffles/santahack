@@ -130,6 +130,7 @@ module.exports = class Data
 			entry.isWishlistComplete = () -> entry.wishlist?.isComplete
 			entry.getVoteItems = (callback) => @getVoteItems entry, callback
 			entry.saveVotes = (votes) => @saveVotes entry, votes
+			entry.addBlogPost = (post) => @addBlogPost entry, post
 			
 			entry.getAssignment = (callback) =>
 				if entry.assignment?
@@ -179,6 +180,7 @@ module.exports = class Data
 			delete entry.getVoteItems
 			delete entry.saveVotes
 			delete entry.getAssignment
+			delete entry.addBlogPost
 			
 			if entry.wishlist?
 				delete entry.wishlist.getMachinePerformanceDisplay
@@ -340,6 +342,9 @@ module.exports = class Data
 	savePairings: (year, pairings) ->
 		for pairing in pairings
 			@entriesCollection.update({ year: year, user: pairing.sourceUser}, { $set: { assignment: pairing.destUser } })
+	
+	addBlogPost: (entry, post) ->
+		@entriesCollection.update({ year: entry.year, user: entry.user }, { $push: { 'blogPosts': post } })
 	
 	# Users
 	# upgrade user object with helper functions from this class
