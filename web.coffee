@@ -65,7 +65,10 @@ app.use lib.express.session
 	store: new (lib.mongoStore lib.express)
 		url: process.env.MONGOHQ_URL
 		db: 'test'
+		clear_interval: 3600 # clear expired sessions hourly
 	key: 'session'
+	cookie:
+		maxAge: 24 * 60 * 60 * 1000 # sessions expire in a day
 	secret: 'santa shack'
 app.use lib.express.bodyParser()
 app.use lib.express.methodOverride()
