@@ -440,7 +440,7 @@ app.post /^\/(?:\d{4}\/)?blog$/, (req, res, next) ->
 		errors.postTitle = 'Please give the blog post a title.' if not blogPost.title or blogPost.title.length == 0
 		errors.blogPost = 'Please enter a blog post.' if not blogPost.content? or blogPost.content.length == 0
 		
-		for file in req.files.screenshot
+		for file in _.flatten req.files.screenshot
 			if file.size > 0
 				if file.type not in [ 'image/png', 'image/jpeg', 'image/gif' ]
 					errors.screenshot = 'Only PNG, JPEG, and GIF images are allowed.'
@@ -472,19 +472,17 @@ app.post /^\/(?:\d{4}\/)?blog$/, (req, res, next) ->
 		
 		if uploads.length > 0
 			seq = lib.seq()
-		
-			for upload_ in uploads
-				do ->
-					upload = upload_
-					seq.par(() -> s3.putFile upload.source, upload.s3Name, { 'Content-Type': upload.type, 'x-amz-acl': 'public-read' }, this)
-					seq.par(() ->
-						# generate thumbnail
-						imageMagick(upload.source)
-							.quality(63)
-							.resize(150)
-							.write("#{upload.source}_t", (err) => if err? then this err else s3.putFile "#{upload.source}_t", upload.s3Thumb, { 'Content-Type': upload.type, 'x-amz-acl': 'public-read' }, this)
-					)
-		
+			
+			uploads.forEach (upload) ->
+				seq.par(() -> s3.putFile upload.source, upload.s3Name, { 'Content-Type': upload.type, 'x-amz-acl': 'public-read' }, this)
+				seq.par(() ->
+					# generate thumbnail
+					imageMagick(upload.source)
+						.quality(63)
+						.resize(200)
+						.write("#{upload.source}_t", (err) => if err? then this err else s3.putFile "#{upload.source}_t", upload.s3Thumb, { 'Content-Type': upload.type, 'x-amz-acl': 'public-read' }, this)
+				)	
+			
 			seq
 				.unflatten()
 				.seq((results) ->

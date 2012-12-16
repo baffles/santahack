@@ -10,6 +10,14 @@ $ () ->
 		e.preventDefault()
 		$ssFiles.append $('<input>').attr('type', 'file').attr('name', 'screenshot[]')
 	
+	$('.lightbox').lightbox
+		fitToScreen: true
+		loopImages: true
+		fileLoadingImage: '/static/lib/lightbox/images/loading.gif'
+		fileBottomNavCloseImage: '/static/lib/lightbox/images/closelabel.gif'
+		displayDownloadLink: true
+	
+	# note to self: on ajax pagination, deal with lightboxes
 	###$('.pagination a').click (e) ->
 		e.preventDefault()
 		page = parseInt $(this).attr 'data-page'
