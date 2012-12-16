@@ -1,7 +1,7 @@
 $ () ->
 	$ssLabel = $ '#screenshotsLabel'
 	$ssLabel.append '(s) ['
-	$ssLabel.append $addSSLink = $('<a>').attr('href', '#').text('+')
+	$ssLabel.append $addSSLink = $('<a>').attr('href', '#').attr('title', 'Add more upload slots').text('+')
 	$ssLabel.append ']'
 	
 	$ssFiles = $ '#screenshots'
