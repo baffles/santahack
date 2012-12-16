@@ -12,13 +12,16 @@ mixin blogPost(post)
 		h3= post.title
 		span.date(title=utcDate(post.date)) Posted #{friendlyDate(post.date)} by #{post.author}
 		span!= markdown(post.content)
-		//if post.screenshots != null
-		//	for image in post.screenshots
-		//		img(src=getS3Url(image.s3Name))
+		if post.screenshots != null
+			for image in post.screenshots
+				img(src=getS3Url(image.thumbnail))
 
 block content
 	h2 Blog
 	- var compState = competition.getState()
+	- var formData = (typeof formData !== 'undefined' && formData != null) ? formData : {}
+	- var errors = (typeof errors !== 'undefined' && errors != null) ? errors : {}
+	- var validationFailed = Object.keys(errors).length > 0
 	if session.user == null
 		p Please 
 			a(href='/login?return=' + returnURL) login
@@ -32,18 +35,18 @@ block content
 					h3(style='margin-top: 0') New Post
 					div
 						form.form-horizontal(method='POST', enctype='multipart/form-data', style='margin: 0')
-							.control-group
+							.control-group(class=errors.postTitle != null ? 'error' : '', title=errors.postTitle)
 								label.control-label(for='postTitle') Title
 								.controls
-									input#postTitle.input-block-level(name='postTitle', type='text', placeholder='Post Title')
-							//.control-group
-							//	label#screenshotsLabel.control-label Screenshot
-							//	#screenshots.controls
-							//		input(name='screenshot[]', type='file')
-							.control-group
+									input#postTitle.input-block-level(name='postTitle', type='text', placeholder='Post Title', value=formData.postTitle)
+							.control-group(class=errors.screenshot != null ? 'error' : validationFailed ? 'warning' : '', title=errors.screenshot != null ? errors.screenshot : 'Be sure to re-select any screenshots you had selected after fixing the errors.')
+								label#screenshotsLabel.control-label Screenshot
+								#screenshots.controls
+									input(name='screenshot[]', type='file')
+							.control-group(class=errors.blogPost != null ? 'error' : '', title=errors.blogPost)
 								label.control-label(for='blogPost') Post
 								.controls
-									textarea#blogPost.input-block-level(name='blogPost', rows='10', placeholder='Blog Post')
+									textarea#blogPost.input-block-level(name='blogPost', rows='10', placeholder='Blog Post')= formData.blogPost
 							.control-group(style='margin-bottom: 0')
 								.controls
 									button#postButton.btn.btn-primary(type='submit', data-posting-text='Posting...', autocomplete='off') Post

@@ -9,6 +9,8 @@ lib =
 	seq: require 'seq'
 	uuid: require 'node-uuid'
 	knox: require 'knox'
+	gm: require 'gm'
+	fs: require 'fs'
 	accSso: require './acc-sso'
 	data: require './data'
 	pairings: require './pairings'
@@ -23,6 +25,8 @@ s3 = lib.knox.createClient
 	secret: process.env.AWS_SECRET
 	bucket: process.env.AWS_BUCKET
 	secure: false
+
+imageMagick = lib.gm.subClass { imageMagick: true }
 
 accSso = new lib.accSso
 data = new lib.data db
@@ -221,7 +225,7 @@ app.get '/info.json', (req, res, next) ->
 				completeWishlists: @vars.participantInfo.completeWishlists
 				hasVoted: @vars.participantInfo.hasVoted
 				eligibleParticipants: @vars.participantInfo.eligibleParticipants
-				blogEntries: 0
+				blogEntries: @vars.participantInfo.blogEntries
 				entriesSubmitted: 0
 				currentPhase: @vars.competition.getState().jsonDisplay
 				timeLeft:
@@ -415,7 +419,7 @@ app.get /^\/(?:\d{4}\/)?blog$/, (req, res, next) ->
 		firstPost = (if req.query.page? then parseInt(req.query.page) * 5 else 0)
 		res.render 'blog',
 			title: "SantaHack #{req.year} Blog"
-			blogPosts: _.sortBy(req.competitionEntry?.blogPosts, 'date').slice(firstPost, firstPost + 5).reverse()
+			blogPosts: _.sortBy(req.competitionEntry?.blogPosts, 'date').reverse().slice(firstPost, firstPost + 5)
 			pageCount: Math.ceil req.competitionEntry?.blogPosts?.length / 5
 
 app.post /^\/(?:\d{4}\/)?blog$/, (req, res, next) ->
@@ -428,36 +432,42 @@ app.post /^\/(?:\d{4}\/)?blog$/, (req, res, next) ->
 			title: req.body.postTitle
 			content: req.body.blogPost
 		
-		validationFailed = false
 		errors = {}
 		
 		uploads = []
 		
 		# validation
-		if not blogPost.title or blogPost.title.length == 0
-			errors.title = 'Please give the blog post a title.'
-			validationFailed = true
+		errors.postTitle = 'Please give the blog post a title.' if not blogPost.title or blogPost.title.length == 0
+		errors.blogPost = 'Please enter a blog post.' if not blogPost.content? or blogPost.content.length == 0
 		
-		if not blogPost.content? or blogPost.content.length == 0
-			errors.content = 'Please enter a blog post.'
-			validationFailed = true
-		
-		for file in _.flatten req.files
-			if file.type isnt 'application/octet-stream'
-				# check file.type
+		for file in req.files.screenshot
+			if file.size > 0
 				if file.type not in [ 'image/png', 'image/jpeg', 'image/gif' ]
-					errors.screenshots = 'Only PNG, JPEG, and GIF images are allowed.'
-					validationFailed = true
-					break
-			
+					errors.screenshot = 'Only PNG, JPEG, and GIF images are allowed.'
+				
+				id = lib.uuid.v1()
+				s3Name = "blogImages/#{id}"
+				s3Thumb = "blogImages/#{id}_t"
+				
 				uploads.push
 					source: file.path
-					s3Name: "blogImages/#{lib.uuid.v1()}"
 					name: file.name
+					type: file.type
+					s3Name: s3Name
+					s3Thumb: s3Thumb
 		
-		if validationFailed
-			#...
-			res.send errors
+		if Object.keys(errors).length > 0
+			for upload in uploads
+				lib.fs.unlink upload.source
+			
+			res.render 'blog',
+				title: "SantaHack #{req.year} Blog"
+				errors: errors
+				formData:
+					postTitle: req.body.postTitle
+					blogPost: req.body.blogPost
+				blogPosts: []
+				pageCount: 1
 			return
 		
 		if uploads.length > 0
@@ -466,20 +476,32 @@ app.post /^\/(?:\d{4}\/)?blog$/, (req, res, next) ->
 			for upload_ in uploads
 				do ->
 					upload = upload_
-					seq.par(() -> s3.putFile upload.source, upload.s3Name, { 'x-amz-acl': 'public-read' }, this)
+					seq.par(() -> s3.putFile upload.source, upload.s3Name, { 'Content-Type': upload.type, 'x-amz-acl': 'public-read' }, this)
+					seq.par(() ->
+						# generate thumbnail
+						imageMagick(upload.source)
+							.quality(63)
+							.resize(150)
+							.write("#{upload.source}_t", (err) => if err? then this err else s3.putFile "#{upload.source}_t", upload.s3Thumb, { 'Content-Type': upload.type, 'x-amz-acl': 'public-read' }, this)
+					)
 		
 			seq
 				.unflatten()
 				.seq((results) ->
+					# clean up uploads
+					for upload in uploads
+						lib.fs.unlink upload.source
+						lib.fs.unlink "#{upload.source}_t"
+					
 					# check all results
 					if _.every(results, (res) -> res.statusCode == 200)
 						# everything is good! let's finalize the post!
-						blogPost.screenshots = uploads.map (upload) -> { name: upload.name, s3Name: upload.s3Name }
+						blogPost.screenshots = uploads.map (upload) -> { name: upload.name, fullsize: upload.s3Name, thumbnail: upload.s3Thumb }
 						
 						req.competitionEntry.addBlogPost blogPost
 						res.redirect res.locals.genLink '/blog'
 					else
-						next "Error uploading to S3 - #{res.statusCode}"
+						next "Error uploading to S3..."
 				).catch(next)
 		else
 			req.competitionEntry.addBlogPost blogPost

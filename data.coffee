@@ -198,6 +198,10 @@ module.exports = class Data
 			.par_((s) => @entriesCollection.find({ year: competition.year, 'wishlist.isComplete': true }).count s.into 'completeWishlists')
 			.par_((s) => @entriesCollection.find({ year: competition.year, 'wishlist.isComplete': true, 'hasVoted': true }).count s.into 'hasVoted')
 			.par_((s) => @entriesCollection.find({ year: competition.year, isEligible: true }).count s.into 'eligibleParticipants')
+			.par_((s) => @entriesCollection.find({ year: competition.year }, { blogPosts: 1 }).toArray (err, entries) ->
+				s err if err?
+				s.into('blogEntries')(null, _.reduce entries, ((count, entry) -> count + (entry.blogPosts?.length ? 0)), 0)
+			)
 			.catch((err) -> callback err, null)
 			.seq_((s) -> callback null, s.vars)
 	
