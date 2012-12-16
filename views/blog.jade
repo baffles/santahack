@@ -41,7 +41,7 @@ block content
 							.control-group(class=errors.postTitle != null ? 'error' : '', title=errors.postTitle)
 								label.control-label(for='postTitle') Title
 								.controls
-									input#postTitle.input-block-level(name='postTitle', type='text', placeholder='Post Title', value=formData.postTitle)
+									input#postTitle.input-block-level(name='postTitle', type='text', placeholder='Post Title', value=formData.postTitle, autocomplete='off')
 							.control-group(class=errors.screenshot != null ? 'error' : validationFailed ? 'warning' : '', title=errors.screenshot != null ? errors.screenshot : 'Be sure to re-select any screenshots you had selected after fixing the errors.')
 								label#screenshotsLabel.control-label Screenshot
 								#screenshots.controls
