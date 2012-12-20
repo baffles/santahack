@@ -136,8 +136,11 @@ app.use (req, res, next) ->
 	else if compState is lib.data.competitionStates.Voting and req.competitionEntry?.isWishlistComplete() and not req.competitionEntry.hasVoted
 		res.locals.warnMsg = 'It looks like you haven\'t voted on at least half of the game ideas yet. Please submit your votes in time to ensure you remain eligible!'
 		res.locals.showWarnMsg = true
-	else if lib.data.competitionStates.Development.seq <= compState?.seq <= lib.data.competitionStates.DevelopmentGrace.seq and req.competitionEntry?.isSubmissionPartiallyComplete()
+	else if compState is lib.data.competitionStates.Development and req.competitionEntry?.isSubmissionPartiallyComplete()
 		res.locals.warnMsg = 'It looks like you haven\'t finished your submission. Please make sure to finish filling in all required information on the submission page before the end of the competition!'
+		res.locals.showWarnMsg = true
+	else if compState is lib.data.competitionStates.DevelopmentGrace and req.competitionEntry?.isEligible
+		res.locals.warnMsg = 'The competition is now over. There is a short grace period if you still need to edit or upload your entry.'
 		res.locals.showWarnMsg = true
 	next()
 
