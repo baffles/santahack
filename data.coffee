@@ -203,7 +203,7 @@ module.exports = class Data
 	
 	getParticipantInfo: (competition, callback) ->
 		throw 'callback required' if not callback?
-		seq()
+		seq() #not(entry.submission.name?.length > 0 and entry.submission.description?.length > 0 and entry.submission.sourcePack? and entry.submission.implementsWish? and _.any entry.submission.implementsWish)
 			.par_((s) => @entriesCollection.find({ year: competition.year }).count s.into 'participants')
 			.par_((s) => @entriesCollection.find({ year: competition.year, 'wishlist.isComplete': true }).count s.into 'completeWishlists')
 			.par_((s) => @entriesCollection.find({ year: competition.year, 'wishlist.isComplete': true, 'hasVoted': true }).count s.into 'hasVoted')
@@ -211,6 +211,12 @@ module.exports = class Data
 			.par_((s) => @entriesCollection.find({ year: competition.year }, { blogPosts: 1 }).toArray (err, entries) ->
 				s err if err?
 				s.into('blogEntries')(null, _.reduce entries, ((count, entry) -> count + (entry.blogPosts?.length ? 0)), 0)
+			)
+			.par_((s) => @entriesCollection.find({ year: competition.year, submission: { $exists: true }, $where: () ->
+						implementsWish = false
+						if @submission.implementsWish? then (if b then implementsWish = true) for b in @submission.implementsWish
+						@submission.name?.length > 0 and @submission.description?.length > 0 and @submission.sourcePack? and implementsWish
+					}).count s.into 'entriesSubmitted'
 			)
 			.catch((err) -> callback err, null)
 			.seq_((s) -> callback null, s.vars)
@@ -328,7 +334,7 @@ module.exports = class Data
 		@entriesCollection.update { year: year }, { $unset: { isEligible: '' } }, false, true
 
 	updateEligibility: (year) ->
-		@entriesCollection.update { year: 2012, 'wishlist.isComplete': true, hasVoted: true, 'wishlist.votes': { $exists: true }, $where: () ->
+		@entriesCollection.update { year: year, 'wishlist.isComplete': true, hasVoted: true, 'wishlist.votes': { $exists: true }, $where: () ->
 				for i, vote of @wishlist.votes
 					if Math.round(10 * vote.score / vote.count) >= 25
 						return true

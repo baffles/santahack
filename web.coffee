@@ -243,7 +243,7 @@ app.get '/info.json', (req, res, next) ->
 				hasVoted: @vars.participantInfo.hasVoted
 				eligibleParticipants: @vars.participantInfo.eligibleParticipants
 				blogEntries: @vars.participantInfo.blogEntries
-				entriesSubmitted: 0
+				entriesSubmitted: @vars.participantInfo.entriesSubmitted
 				currentPhase: @vars.competition.getState().jsonDisplay
 				timeLeft:
 						'registration-begin': (@vars.competition.registrationBegin.valueOf() - now) / 1000 | 0
