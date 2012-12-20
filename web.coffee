@@ -566,7 +566,7 @@ app.post /^\/(?:\d{4}\/)?submit$/, (req, res, next) ->
 		# source pack
 		if req.files.sourcePack?.size > 0
 			# user uploaded a source pack
-			if not(req.files.sourcePack.type is 'application/zip' or (req.files.sourcePack.type is 'application/octet-stream' and lib.path.extname(req.files.sourcePack.name).toLowerCase() is '.zip'))
+			if req.files.sourcePack.type isnt 'application/zip' and lib.path.extname(req.files.sourcePack.name).toLowerCase() isnt '.zip'
 				fileErrors.push "#{req.files.sourcePack.name} is not a zip file."
 			else if req.files.sourcePack.size > req.competition.sourcePackSize
 				fileErrors.push "#{req.files.sourcePack.name} is larger than #{req.competition.sourcePackSize} bytes."
@@ -586,7 +586,7 @@ app.post /^\/(?:\d{4}\/)?submit$/, (req, res, next) ->
 		# binary pack
 		if req.files.binaryPack?.size > 0
 			# user uploaded a binary pack
-			if not(req.files.binaryPack.type is 'application/zip' or (req.files.binaryPack.type is 'application/octet-stream' and lib.path.extname(req.files.binaryPack.name).toLowerCase() is '.zip'))
+			if req.files.binaryPack.type isnt 'application/zip' and lib.path.extname(req.files.binaryPack.name).toLowerCase() isnt '.zip'
 				fileErrors.push "#{req.files.binaryPack.name} is not a zip file."
 			else if req.files.binaryPack.size > req.competition.binaryPackSize
 				fileErrors.push "#{req.files.binaryPack.name} is larger than #{req.competition.binaryPackSize} bytes."
