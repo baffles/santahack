@@ -38,14 +38,18 @@ html
 								li: a(href=genLink('/submit')) Submission
 						if competitionEntry.isEligible && compSeq > competitionStates.DevelopmentIntermission.seq
 							li: a(href=genLink('/gift')) Your Gift
+			.clearfix
+			noscript
+				.alert.alert-info
+					strong JavaScript is recommended
+					|  for the best experience on this site.
 			if typeof(warnMsg) !== 'undefined' && warnMsg != null && showWarnMsg
-				#alertContainer
-					#alert.alert.alert-warn
-						button.close(type='button', onClick='$("#alertContainer #alert").slideUp()') &times;</button>
-						span
-							strong Uh oh...
-							|  
-							=warnMsg
+				.alert.alert-warn
+					//button.close(type='button', onClick='$(this).parent().slideUp()') &times;</button>
+					span
+						strong Uh oh...
+						|  
+						=warnMsg
 			#user
 				if session.user != null
 					img#avatar(src='http://static.allegro.cc/image/avatar/' + session.user.avatar)
