@@ -53,6 +53,16 @@ form#competitionForm.form-horizontal
 				input#pubRelease.input-medium(type='text', placeholder='Public Release', data-type='date')
 				span.help-inline
 		.control-group
+			label.control-label(for='sourcePackSize') Source Pack Size
+			.controls
+				input#sourcePackSize.input-medium(type='text', placeholder='Max Source Pack Size', data-type='number')
+				span.help-inline
+		.control-group
+			label.control-label(for='binaryPackSize') Binary Pack Size
+			.controls
+				input#binaryPackSize.input-medium(type='text', placeholder='Max Binary Pack Size', data-type='number')
+				span.help-inline
+		.control-group
 			label.control-label(for='rules') Rules
 			.controls: textarea#rules.input-xxlarge(rows='10')
 		.control-group

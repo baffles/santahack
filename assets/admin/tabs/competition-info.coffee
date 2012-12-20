@@ -9,6 +9,8 @@ class CompetitionInfoTab extends Tab
 		@$entryCutoff = null
 		@$privRelease = null
 		@$pubRelease = null
+		@$sourcePackSize = null
+		@$binaryPackSize = null
 		@$rules = null
 		@$saveButton = null
 		@$discardButton = null
@@ -24,6 +26,8 @@ class CompetitionInfoTab extends Tab
 			@$entryCutoff = $('#competitionForm #entryCutoff:first', @$container)
 			@$privRelease = $('#competitionForm #privRelease:first', @$container)
 			@$pubRelease = $('#competitionForm #pubRelease:first', @$container)
+			@$sourcePackSize = $('#competitionForm #sourcePackSize:first', @$container)
+			@$binaryPackSize = $('#competitionForm #binaryPackSize:first', @$container)
 			@$rules = $('#competitionForm #rules:first', @$container)
 			@$saveButton = $('#competitionForm button[name="save"]:first', @$container)
 			@$discardButton = $('#competitionForm button[name="discard"]:first', @$container)
@@ -42,6 +46,15 @@ class CompetitionInfoTab extends Tab
 
 				$($(this).siblings('.help-inline').get 0).text if valid then '' else "#{dateFormat} (e.g., #{new moment().format dateFormat})"
 
+			# validation on number fields
+			$('input[data-type="number"]', @$container).keyup () ->
+				valid = $.isNumeric $(this).val()
+
+				$($(this).parents('.control-group').get 0)
+					.removeClass('warning error info success')
+					.addClass if valid then 'success' else 'error'
+
+				$($(this).siblings('.help-inline').get 0).text if valid then '' else "number of bytes"
 
 			# enable tab in rules textbox (for markdown)
 			$(document).delegate '#competitionForm #rules', 'keydown', (e) ->
@@ -90,6 +103,8 @@ class CompetitionInfoTab extends Tab
 					@$entryCutoff.val moment(comp.entryCutoff).format dateFormat
 					@$privRelease.val moment(comp.privateRelease).format dateFormat
 					@$pubRelease.val moment(comp.publicRelease).format dateFormat
+					@$sourcePackSize.val comp.sourcePackSize
+					@$binaryPackSize.val comp.binaryPackSize
 					@$rules.val comp.rules
 				else
 					@$regBegin.val ''
@@ -101,6 +116,8 @@ class CompetitionInfoTab extends Tab
 					@$entryCutoff.val ''
 					@$privRelease.val ''
 					@$pubRelease.val ''
+					@$sourcePackSize.val ''
+					@$binaryPackSize.val ''
 					@$rules.val ''
 				
 				# run validation on received data
@@ -112,6 +129,15 @@ class CompetitionInfoTab extends Tab
 						.addClass if valid then 'success' else 'error'
 
 					$($(this).siblings('.help-inline').get 0).text if valid then '' else "#{dateFormat} (e.g., #{moment().format dateFormat})"
+				
+				$('input[data-type="number"]', @$container).each () ->
+					valid = $.isNumeric $(this).val()
+
+					$($(this).parents('.control-group').get 0)
+						.removeClass('warning error info success')
+						.addClass if valid then 'success' else 'error'
+
+					$($(this).siblings('.help-inline').get 0).text if valid then '' else "number of bytes"
 				
 				@$saveButton.button 'saved'
 			error: (req, status, errMsg) ->
@@ -139,6 +165,8 @@ class CompetitionInfoTab extends Tab
 			entryCutoff: moment(@$entryCutoff.val(), dateFormat).toDate()
 			privateRelease: moment(@$privRelease.val(), dateFormat).toDate()
 			publicRelease: moment(@$pubRelease.val(), dateFormat).toDate()
+			sourcePackSize: parseInt(@$sourcePackSize.val())
+			binaryPackSize: parseInt(@$binaryPackSize.val())
 			rules: @$rules.val()
 		
 		$.ajax

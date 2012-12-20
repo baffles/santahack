@@ -806,6 +806,8 @@ app.post '/admin/saveCompetition', (req, res) ->
 		entryCutoff: new Date req.body.entryCutoff
 		privateRelease: new Date req.body.privateRelease
 		publicRelease: new Date req.body.publicRelease
+		sourcePackSize: parseInt req.body.sourcePackSize
+		binaryPackSize: parseInt req.body.binaryPackSize
 		rules: req.body.rules
 	
 	data.saveCompetition competition
