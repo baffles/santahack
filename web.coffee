@@ -431,6 +431,7 @@ app.get /^\/(?:\d{4}\/)?task$/, (req, res, next) ->
 			).catch((err) -> next err)
 
 # /blog
+# TODO: make blog page nicer (like submit page), including preview/edit/delete functionality
 app.get /^\/(?:\d{4}\/)?blog$/, (req, res, next) ->
 	if not req.needsYearRedirect()
 		firstPost = (if req.query.page? then parseInt(req.query.page) * 5 else 0)
@@ -675,15 +676,13 @@ app.post /^\/(?:\d{4}\/)?submit$/, (req, res, next) ->
 			).catch(next)
 
 # /gift
-#todo now [for 2011]
+# TODO: /gift page
 
 # /downloads
-#todo now [for 2011]
-
-#! add logging facility
+# TODO: /downloads page
 
 # admin functions
-# should do better w/ check errors from DB on updates/saves
+# TODO: should do better w/ check errors from DB on updates/saves on admin pages
 app.get '/admin/getCompetitionList', (req, res) ->
 	if not req.session?.user?.isAdmin
 		res.json 401, { success: false, error: 'Unauthorized' }
@@ -763,7 +762,6 @@ app.post '/admin/saveNews', (req, res) ->
 	if req.body._id?
 		newsPost._id = new lib.mongolian.ObjectId req.body._id
 	
-	# todo: add error catching/reporting
 	data.saveNews newsPost
 	res.json { success: true }
 
@@ -807,7 +805,6 @@ app.post '/admin/saveWishes', (req, res) ->
 		if item?.destUser? and item?.wish?
 			wishes.push { destUser: item.destUser, wish: item.wish, wishText: text }
 	
-	# todo: add error catching/reporting
 	data.saveWishes parseInt(req.query.year), wishes
 	
 	res.json { success: true }
