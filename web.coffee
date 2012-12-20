@@ -158,6 +158,7 @@ if app.settings.env is 'development'
 		showStack: true
 else
 	app.use (err, req, res, next) ->
+		console.log err
 		res.status 500
 		res.render 'error-500'
 	app.use (err, req, res, next) ->
