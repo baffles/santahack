@@ -129,11 +129,15 @@ app.use (req, res, next) ->
 
 # set warning messages for the user
 app.use (req, res, next) ->
-	if req.competition?.getState() is lib.data.competitionStates.Registration and req.competitionEntry? and not req.competitionEntry.isWishlistComplete()
+	compState = req.competition?.getState()
+	if compState is lib.data.competitionStates.Registration and req.competitionEntry? and not req.competitionEntry.isWishlistComplete()
 		res.locals.warnMsg = 'It looks like your wishlist is incomplete. Please complete it in time to ensure you are allowed to participate!'
 		res.locals.showWarnMsg = true
-	else if req.competition?.getState() is lib.data.competitionStates.Voting and req.competitionEntry?.isWishlistComplete() and not req.competitionEntry.hasVoted
+	else if compState is lib.data.competitionStates.Voting and req.competitionEntry?.isWishlistComplete() and not req.competitionEntry.hasVoted
 		res.locals.warnMsg = 'It looks like you haven\'t voted on at least half of the game ideas yet. Please submit your votes in time to ensure you remain eligible!'
+		res.locals.showWarnMsg = true
+	else if lib.data.competitionStates.Development.seq <= compState.seq <= lib.data.competitionStates.DevelopmentGrace.seq and req.competitionEntry?.isSubmissionPartiallyComplete()
+		res.locals.warnMsg = 'It looks like you haven\'t finished your submission. Please make sure to finish filling in all required information on the submission page before the end of the competition!'
 		res.locals.showWarnMsg = true
 	next()
 
@@ -527,6 +531,7 @@ app.get /^\/(?:\d{4}\/)?submit$/, (req, res) ->
 				req.session.submitFileErrors = null
 				res.render 'submit',
 					title: "SantaHack #{req.year} Submission"
+					showWarnMsg: req.competition.getState() not in [ lib.data.competitionStates.Development, lib.data.competitionStates.DevelopmentGrace ]
 					entry: req.competitionEntry?.submission
 					errors: errors
 					task: task

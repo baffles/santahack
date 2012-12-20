@@ -141,6 +141,13 @@ module.exports = class Data
 						.catch((err) -> callback err, null)
 						.seq(() -> callback null, @vars)
 			
+			entry.isSubmissionPartiallyComplete = () ->
+				# began, but not complete
+				if entry.submission?
+					not(entry.submission.name?.length > 0 and entry.submission.description?.length > 0 and entry.submission.sourcePack? and entry.submission.implementsWish? and _.any entry.submission.implementsWish)
+				else
+					false
+			
 			Data.upgradeWishlist entry.wishlist
 		entry
 	
@@ -178,6 +185,7 @@ module.exports = class Data
 			delete entry.clean
 			delete entry.checkWishlist
 			delete entry.isWishlistComplete
+			delete entry.isSubmissionPartiallyComplete
 			delete entry.getVoteItems
 			delete entry.saveVotes
 			delete entry.getAssignment
