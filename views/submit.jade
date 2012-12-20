@@ -1,0 +1,119 @@
+extends layout
+
+block additionalCSS
+	link(rel='stylesheet', href='/static/lib/lightbox/css/lightbox.css', media='screen')
+	link(rel='stylesheet', href='/static/css/submit.css')
+
+block scripts
+	script(type='text/javascript', src='/static/js/submit.min.js')
+
+block content	
+	h2 Your Submission
+	- var compState = competition.getState().seq
+	- var entry = (typeof entry !== 'undefined' && entry != null) ? entry : {}
+	if session.user == null
+		p Please 
+			a(href='/login?return=' + returnURL) login
+			|  to view and edit your submission.
+	else if compState < competitionStates.Development.seq
+		p Development for SantaHack #{year} is not in progress yet.
+	else if compState <= competitionStates.DevelopmentGrace.seq
+		if competitionEntry == null || !competitionEntry.isEligible
+			p You did not join and fulfill all the requirements for SantaHack #{year}. Better luck next year!
+		else
+			div
+				if errors != null && errors.length > 0
+					.alert
+						| The following files were not uploaded:
+						ul
+							for error in errors
+								li= error
+				p Thanks for participating! You may edit your submission until 
+					strong #{displayDate(competition.devEnd)} (UTC)
+					| . Empty fields are highlighted if the are required.
+				form.form-horizontal(method='POST', enctype='multipart/form-data')
+					h3 Game Information
+					p First thing's first... give us some basic information about the game you made. Please refer to the 
+						a(href=genLink('/rules')) rules
+						|  for submission requirements.
+					.control-group(class=entry.name == null || entry.name.length == 0 ? 'warning' : '')
+						label.control-label(for='name') Game Name
+						.controls
+							input#name.input-large(name='name', type='text', placeholder='Game Name', value=entry.name, autocomplete='off')
+					.control-group
+						label.control-label(for='website') Game Website
+						.controls
+							input#website.input-xlarge(name='website', type='text', placeholder='Game Website', value=entry.website, autocomplete='off')
+					.control-group
+						label#screenshotsLabel.control-label Screenshot
+						#screenshots.controls
+							if entry.screenshots != null
+								for screenshot in entry.screenshots
+									.existing-file
+										img.pull-left(src=getS3Url(screenshot.thumbnail))
+										|  #{screenshot.name}
+										label.checkbox.pull-right
+											| delete
+											input(name="deleteScreenshot[#{screenshot.id}]", type='checkbox')
+							input(name='screenshot[]', type='file')
+					.control-group(class=entry.description == null || entry.description.length == 0 ? 'warning' : '')
+						label.control-label(for='description') Game Description
+							br
+							| [
+							a(href='http://five.squarespace.com/display/ShowHelp?section=Markdown') Markdown
+							|  accepted]
+						.controls
+							textarea#description.input-block-level(name='description', rows='10', placeholder='Game description (will be shown publicly)')= entry.description
+					h3 Competition Information
+					p Let us know what wishes you've implemented, and write a private note to the recipient of your gift if you'd like. If you write a private note, it will only be visible by you and the recipient.
+					- var gotImplementedWishes = false
+					- if (entry.implementsWish != null) for(var i = 0; i < entry.implementsWish.length; i++) if (entry.implementsWish[i]) gotImplementedWishes = true
+					.control-group#wishesImplemented(class=!gotImplementedWishes ? 'warning' : '')
+						label.control-label Wishes Implemented
+						.controls
+							- var wishIdx = 0
+							for wish in task.wishlist.wishes
+								label.checkbox
+									input(name="implementsWish[#{wishIdx}]", type='checkbox', checked=entry.implementsWish != null && entry.implementsWish[wishIdx])
+									= wish
+									- wishIdx++
+					.control-group
+						label.control-label(for='privateNote') Private Note
+							br
+							| [
+							a(href='http://five.squarespace.com/display/ShowHelp?section=Markdown') Markdown
+							|  accepted]
+						.controls
+							textarea#privateNote.input-block-level(name='privateNote', rows='10', placeholder='Private note (optional, will only be shown to recipient)')= entry.privateNote
+					h3 Game Data
+					p Don't forget to provide the source code and optional binary package. Only your latest upload will be retained for each.
+					.control-group(class=entry.sourcePack == null ? 'warning' : '')
+						label.control-label(for='sourcePack') Source Code
+						.controls
+							if entry.sourcePack != null
+								.existing-file #{entry.sourcePack.name} (#{displayBytes(entry.sourcePack.size)}), 
+									strong upload new file to replace
+									label.checkbox.pull-right
+										| delete
+										input(name="deleteSourcePack", type='checkbox')
+							input#sourcePack(name='sourcePack', type='file')
+					.control-group
+						label.control-label(for='binaryPack') Binary Pack
+						.controls
+							if entry.binaryPack != null
+								.existing-file #{entry.binaryPack.name} (#{displayBytes(entry.binaryPack.size)}), 
+									strong upload new file to replace
+									label.checkbox.pull-right
+										| delete
+										input(name="deleteBinaryPack", type='checkbox')
+							input(name='binaryPack', type='file')
+					h3 Save Submission
+					p Now, save your submission. You can come back and complete or edit any of this information at any time.
+					.control-group
+						.controls
+							button#saveButton.btn.btn-primary(type='submit', data-uploading-text='Uploading...', autocomplete='off') Save
+	else
+		if typeof competitionEntry !== 'undefined' && competitionEntry != null && competitionEntry.submission != null
+			p Display link to task page?
+		else
+			p I'm sorry, but it looks like you never completed an entry for SantaHack #{year}. Better luck next year!

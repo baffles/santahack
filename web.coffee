@@ -11,6 +11,7 @@ lib =
 	knox: require 'knox'
 	gm: require 'gm'
 	fs: require 'fs'
+	path: require 'path'
 	accSso: require './acc-sso'
 	data: require './data'
 	pairings: require './pairings'
@@ -165,14 +166,22 @@ lib.marked.setOptions
 app.locals.markdown = lib.marked
 
 app.locals.friendlyDate = (date) -> lib.moment(date).fromNow()
-app.locals.displayDate = (date) -> lib.moment(date).calendar()
+app.locals.displayDate = (date) -> lib.moment(date).utc().calendar()
 app.locals.utcDate = (date) -> lib.moment(date).utc().format 'dddd, MMMM Do YYYY, h:mm:ss a [UTC]'
-app.locals.displayTime = () -> lib.moment().utc().format 'MMM D[,] YYYY, h:mm A [UTC]'
+app.locals.getDisplayTime = () -> lib.moment().utc().format 'MMM D[,] YYYY, h:mm A [UTC]'
 app.locals.getGenerationTime = (requestTime) -> lib.moment().diff(lib.moment(requestTime), 'seconds', true)
-
 
 s3Content = process.env.AWS_CONTENT
 app.locals.getS3Url = (filename) => "http://#{s3Content}/#{filename}"
+
+app.locals.displayBytes = (bytes) ->
+	units = [ 'B', 'KB', 'MB' ]
+	unit = 0
+	val = bytes
+	while val > 1024
+		unit++
+		val /= 1024
+	"#{Math.round(val * 100) / 100} #{units[unit]}"
 
 # /
 app.get /^\/(\d{4})?\/?$/, (req, res) ->
@@ -509,7 +518,238 @@ app.post /^\/(?:\d{4}\/)?blog$/, (req, res, next) ->
 			res.redirect res.locals.genLink '/blog'
 
 # /submit
-#todo later
+app.get /^\/(?:\d{4}\/)?submit$/, (req, res) ->
+	if not req.needsYearRedirect()
+		lib.seq()
+			.seq(() -> req.competitionEntry?.getAssignment this)
+			.seq((task) ->
+				errors = req.session.submitFileErrors
+				req.session.submitFileErrors = null
+				res.render 'submit',
+					title: "SantaHack #{req.year} Submission"
+					entry: req.competitionEntry?.submission
+					errors: errors
+					task: task
+			).catch((err) -> next err)
+
+app.post /^\/(?:\d{4}\/)?submit$/, (req, res, next) ->
+	if not req.needsYearRedirect()
+		submission = req.competitionEntry?.submission ? {}
+		
+		submission.id = submission.id ? lib.uuid.v1()
+		submission.name = req.body.name
+		submission.website = req.body.website
+		submission.description = req.body.description
+		submission.privateNote = req.body.privateNote
+		
+		if req.body.implementsWish?
+			submission.implementsWish = []
+			for i in [0..req.body.implementsWish.length-1]
+				submission.implementsWish[i] = req.body.implementsWish[i]?
+		else
+			submission.implementsWish = null
+		
+		thumbnails = []
+		s3Uploads = []
+		s3Deletes = []
+		s3Folder = "submissions/#{submission.id}"
+		
+		fileErrors = []
+		
+		# source pack
+		if req.files.sourcePack?.size > 0
+			# user uploaded a source pack
+			if not(req.files.sourcePack.type is 'application/zip' or (req.files.sourcePack.type is 'application/octet-stream' and lib.path.extname(req.files.sourcePack.name).toLowerCase() is '.zip'))
+				fileErrors.push "#{req.files.sourcePack.name} is not a zip file."
+			else if req.files.sourcePack.size > req.competition.sourcePackSize
+				fileErrors.push "#{req.files.sourcePack.name} is larger than #{req.competition.sourcePackSize} bytes."
+			else
+				s3Deletes.push "#{s3Folder}/source/#{submission.sourcePack.name}" if submission.sourcePack? # delete old
+				submission.sourcePack = { name: req.files.sourcePack.name, size: req.files.sourcePack.size }
+				s3Uploads.push
+					source: req.files.sourcePack.path
+					s3Name: "#{s3Folder}/source/#{req.files.sourcePack.name}"
+					type: 'application/zip'
+		else if req.body.deleteSourcePack?
+			# user wants to delete this file
+			if submission.sourcePack?
+				s3Deletes.push "#{s3Folder}/source/#{submission.sourcePack.name}"
+				submission.sourcePack = null
+		
+		# binary pack
+		if req.files.binaryPack?.size > 0
+			# user uploaded a binary pack
+			if not(req.files.binaryPack.type is 'application/zip' or (req.files.binaryPack.type is 'application/octet-stream' and lib.path.extname(req.files.binaryPack.name).toLowerCase() is '.zip'))
+				fileErrors.push "#{req.files.binaryPack.name} is not a zip file."
+			else if req.files.binaryPack.size > req.competition.binaryPackSize
+				fileErrors.push "#{req.files.binaryPack.name} is larger than #{req.competition.binaryPackSize} bytes."
+			else
+				s3Deletes.push "#{s3Folder}/binary/#{submission.binaryPack.name}" if submission.binaryPack? # delete old
+				submission.binaryPack = { name: req.files.binaryPack.name, size: req.files.binaryPack.size }
+				s3Uploads.push
+					source: req.files.binaryPack.path
+					s3Name: "#{s3Folder}/binary/#{req.files.binaryPack.name}"
+					type: 'application/zip'
+		else if req.body.deleteBinaryPack?
+			# user wants to delete this file
+			if submission.binaryPack?
+				s3Deletes.push "#{s3Folder}/binary/#{submission.binaryPack.name}"
+				submission.binaryPack = null
+		
+		# new screenshots
+		for file in _.flatten req.files.screenshot
+			if file.size > 0
+				if file.type not in [ 'image/png', 'image/jpeg', 'image/gif' ]
+					fileErrors.push "#{file.name} is not a PNG, JPEG, or GIF."
+				else
+					id = lib.uuid.v1()
+					s3Name = "#{s3Folder}/screenshots/#{id}"
+					s3Thumb = "#{s3Folder}/screenshots/#{id}_t"
+					
+					screenshot =
+						id: id
+						name: file.name
+						fullsize: s3Name
+						thumbnail: s3Thumb
+					
+					submission.screenshots.push screenshot
+					
+					s3Uploads.push
+						source: file.path
+						s3Name: s3Name
+						type: file.type
+					
+					thumbnails.push
+						source: file.path
+						s3Name: s3Thumb
+						type: file.type
+		
+		# deleted screenshots
+		for toDelete in _.filter(submission.screenshots, (screenshot) -> req.body.deleteScreenshot?[screenshot.id]?)
+			s3Deletes.push toDelete.fullsize
+			s3Deletes.push toDelete.thumbnail
+		submission.screenshots = _.reject submission.screenshots, (screenshot) -> req.body.deleteScreenshot?[screenshot.id]?
+		
+		# process s3 uploads/deletes
+		seq = lib.seq()
+		
+		s3Deletes.forEach (deleted) -> seq.par () -> s3.deleteFile deleted, this
+		seq.seq(() -> this()) # wait for deletes
+		
+		s3Uploads.forEach (upload) ->
+			seq.par(() -> s3.putFile upload.source, upload.s3Name, { 'Content-Type': upload.type, 'x-amz-acl': 'public-read' }, this)
+		
+		thumbnails.forEach (thumbnail) ->
+			seq.par(() ->
+				# generate thumbnail
+				imageMagick(thumbnail.source)
+					.quality(63)
+					.resize(200)
+					.write("#{thumbnail.source}_t", (err) => if err? then this err else s3.putFile "#{thumbnail.source}_t", thumbnail.s3Name, { 'Content-Type': thumbnail.type, 'x-amz-acl': 'public-read' }, this)
+			)
+		
+		seq
+			.unflatten()
+			.seq((results) ->
+				# clean up temp files from disk
+				for file in _.flatten req.files
+					lib.fs.unlink file.path
+				for thumbnail in thumbnails
+					lib.fs.unlink "#{thumbnail.source}_t"
+				
+				# check all results
+				if _.every(results, (res) -> res.statusCode == 200)
+					# everything is good! let's finalize this submission!
+					req.competitionEntry.saveSubmission submission
+					req.session.submitFileErrors = fileErrors
+					res.redirect res.locals.genLink '/submit'
+				else
+					console.log "Error interacting with s3, results: ", results
+					next "Error interacting with S3..."
+			).catch(next)
+		
+			
+	###if not req.needsYearRedirect()
+		# deal with file uploads
+
+		blogPost =
+			date: new Date()
+			author: req.user.name
+			title: req.body.postTitle
+			content: req.body.blogPost
+
+		errors = {}
+
+		uploads = []
+
+		# validation
+		errors.postTitle = 'Please give the blog post a title.' if not blogPost.title or blogPost.title.length == 0
+		errors.blogPost = 'Please enter a blog post.' if not blogPost.content? or blogPost.content.length == 0
+
+		for file in _.flatten req.files.screenshot
+			if file.size > 0
+				if file.type not in [ 'image/png', 'image/jpeg', 'image/gif' ]
+					errors.screenshot = 'Only PNG, JPEG, and GIF images are allowed.'
+
+				id = lib.uuid.v1()
+				s3Name = "blogImages/#{id}"
+				s3Thumb = "blogImages/#{id}_t"
+
+				uploads.push
+					source: file.path
+					name: file.name
+					type: file.type
+					s3Name: s3Name
+					s3Thumb: s3Thumb
+
+		if Object.keys(errors).length > 0
+			for upload in uploads
+				lib.fs.unlink upload.source
+
+			res.render 'blog',
+				title: "SantaHack #{req.year} Blog"
+				errors: errors
+				formData:
+					postTitle: req.body.postTitle
+					blogPost: req.body.blogPost
+				blogPosts: []
+				pageCount: 1
+			return
+
+		if uploads.length > 0
+			seq = lib.seq()
+
+			uploads.forEach (upload) ->
+				seq.par(() -> s3.putFile upload.source, upload.s3Name, { 'Content-Type': upload.type, 'x-amz-acl': 'public-read' }, this)
+				seq.par(() ->
+					# generate thumbnail
+					imageMagick(upload.source)
+						.quality(63)
+						.resize(200)
+						.write("#{upload.source}_t", (err) => if err? then this err else s3.putFile "#{upload.source}_t", upload.s3Thumb, { 'Content-Type': upload.type, 'x-amz-acl': 'public-read' }, this)
+				)	
+
+			seq
+				.unflatten()
+				.seq((results) ->
+					# clean up uploads
+					for upload in uploads
+						lib.fs.unlink upload.source
+						lib.fs.unlink "#{upload.source}_t"
+
+					# check all results
+					if _.every(results, (res) -> res.statusCode == 200)
+						# everything is good! let's finalize the post!
+						blogPost.screenshots = uploads.map (upload) -> { name: upload.name, fullsize: upload.s3Name, thumbnail: upload.s3Thumb }
+
+						req.competitionEntry.addBlogPost blogPost
+						res.redirect res.locals.genLink '/blog'
+					else
+						next "Error uploading to S3..."
+				).catch(next)
+		else
+			req.competitionEntry.addBlogPost blogPost
+			res.redirect res.locals.genLink '/blog'###
 
 # /gift
 #todo now [for 2011]

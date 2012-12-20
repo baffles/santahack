@@ -131,6 +131,7 @@ module.exports = class Data
 			entry.getVoteItems = (callback) => @getVoteItems entry, callback
 			entry.saveVotes = (votes) => @saveVotes entry, votes
 			entry.addBlogPost = (post) => @addBlogPost entry, post
+			entry.saveSubmission = (submission) => @saveSubmission entry, submission
 			
 			entry.getAssignment = (callback) =>
 				if entry.assignment?
@@ -181,6 +182,7 @@ module.exports = class Data
 			delete entry.saveVotes
 			delete entry.getAssignment
 			delete entry.addBlogPost
+			delete entry.saveSubmission
 			
 			if entry.wishlist?
 				delete entry.wishlist.getMachinePerformanceDisplay
@@ -349,6 +351,9 @@ module.exports = class Data
 	
 	addBlogPost: (entry, post) ->
 		@entriesCollection.update({ year: entry.year, user: entry.user }, { $push: { 'blogPosts': post } })
+	
+	saveSubmission: (entry, submission) ->
+		@entriesCollection.update { user: entry.user, year: entry.year }, { $set: { submission } }
 	
 	# Users
 	# upgrade user object with helper functions from this class
