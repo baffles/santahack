@@ -571,16 +571,16 @@ app.post /^\/(?:\d{4}\/)?submit$/, (req, res, next) ->
 			else if req.files.sourcePack.size > req.competition.sourcePackSize
 				fileErrors.push "#{req.files.sourcePack.name} is larger than #{req.competition.sourcePackSize} bytes."
 			else
-				s3Deletes.push "#{s3Folder}/source/#{submission.sourcePack.name}" if submission.sourcePack? # delete old
-				submission.sourcePack = { name: req.files.sourcePack.name, size: req.files.sourcePack.size }
+				s3Deletes.push submission.sourcePack.path if submission.sourcePack? # delete old
+				submission.sourcePack = { name: req.files.sourcePack.name, path: "#{s3Folder}/source/#{encodeURIComponent(req.files.sourcePack.name)}", size: req.files.sourcePack.size }
 				s3Uploads.push
 					source: req.files.sourcePack.path
-					s3Name: "#{s3Folder}/source/#{req.files.sourcePack.name}"
+					s3Name: submission.sourcePack.path
 					type: 'application/zip'
 		else if req.body.deleteSourcePack?
 			# user wants to delete this file
 			if submission.sourcePack?
-				s3Deletes.push "#{s3Folder}/source/#{submission.sourcePack.name}"
+				s3Deletes.push submission.sourcePack.path
 				submission.sourcePack = null
 		
 		# binary pack
@@ -591,16 +591,16 @@ app.post /^\/(?:\d{4}\/)?submit$/, (req, res, next) ->
 			else if req.files.binaryPack.size > req.competition.binaryPackSize
 				fileErrors.push "#{req.files.binaryPack.name} is larger than #{req.competition.binaryPackSize} bytes."
 			else
-				s3Deletes.push "#{s3Folder}/binary/#{submission.binaryPack.name}" if submission.binaryPack? # delete old
-				submission.binaryPack = { name: req.files.binaryPack.name, size: req.files.binaryPack.size }
+				s3Deletes.push submission.binaryPack.path if submission.binaryPack? # delete old
+				submission.binaryPack = { name: req.files.binaryPack.name, path: "#{s3Folder}/binary/#{encodeURIComponent(req.files.binaryPack.name)}", size: req.files.binaryPack.size }
 				s3Uploads.push
 					source: req.files.binaryPack.path
-					s3Name: "#{s3Folder}/binary/#{req.files.binaryPack.name}"
+					s3Name: submission.binaryPack.path
 					type: 'application/zip'
 		else if req.body.deleteBinaryPack?
 			# user wants to delete this file
 			if submission.binaryPack?
-				s3Deletes.push "#{s3Folder}/binary/#{submission.binaryPack.name}"
+				s3Deletes.push submission.binaryPack.path
 				submission.binaryPack = null
 		
 		# new screenshots
@@ -643,8 +643,7 @@ app.post /^\/(?:\d{4}\/)?submit$/, (req, res, next) ->
 		s3Deletes.forEach (deleted) -> seq.par () -> s3.deleteFile deleted, this
 		seq.seq(() -> this()) # wait for deletes
 		
-		s3Uploads.forEach (upload) ->
-			seq.par(() -> s3.putFile upload.source, upload.s3Name, { 'Content-Type': upload.type, 'x-amz-acl': 'public-read' }, this)
+		s3Uploads.forEach (upload) -> seq.par(() -> s3.putFile upload.source, upload.s3Name, { 'Content-Type': upload.type, 'x-amz-acl': 'public-read' }, this)
 		
 		thumbnails.forEach (thumbnail) ->
 			seq.par(() ->
