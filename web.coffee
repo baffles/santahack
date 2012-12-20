@@ -547,6 +547,7 @@ app.post /^\/(?:\d{4}\/)?submit$/, (req, res, next) ->
 		submission.website = req.body.website
 		submission.description = req.body.description
 		submission.privateNote = req.body.privateNote
+		submission.screenshots = submission.screenshots ? []
 		
 		if req.body.implementsWish?
 			submission.implementsWish = []
