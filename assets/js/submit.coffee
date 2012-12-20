@@ -11,7 +11,6 @@ $ () ->
 		$ssFiles.append $('<input>').attr('type', 'file').attr('name', 'screenshot[]')
 	
 	$('#saveButton').click (e) ->
-		e.preventDefault()
 		$(this).button 'uploading'
 		# setTimeout, because calling button() does the same, otherwise our disable gets squashed
 		setTimeout (=> $(this).attr 'disabled', 'disabled'), 1
