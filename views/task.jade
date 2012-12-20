@@ -41,7 +41,7 @@ block content
 			if compState.seq < competitionStates.DevelopmentIntermission.seq
 				h3 Development
 				p You have until 
-					strong= displayDate(competition.devEnd)
+					strong #{displayDate(competition.devEnd)} (UTC)
 					|  to develop this game. Review the 
 					a(href=genLink('/rules')) rules
 					|  if necessary, then get to work!
