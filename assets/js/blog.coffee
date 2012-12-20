@@ -10,6 +10,9 @@ $ () ->
 		e.preventDefault()
 		$ssFiles.append $('<input>').attr('type', 'file').attr('name', 'screenshot[]')
 	
+	$('#postButton').click (e) ->
+		$(this).button 'posting'
+	
 	$('.lightbox').lightbox
 		fitToScreen: true
 		loopImages: true

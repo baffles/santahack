@@ -30,7 +30,7 @@ block content
 			a(href='/login?return=' + returnURL) login
 			|  to view and edit your blog.
 	else if compState.seq >= competitionStates.Development.seq
-		if competitionEntry == null || !competitionEntry.isEligible
+		if typeof competitionEntry === 'undefined' || competitionEntry == null || !competitionEntry.isEligible
 			p You did not join and fulfill all the requirements for SantaHack #{year}. Better luck next year!
 		else
 			if compState.seq <= competitionStates.DevelopmentIntermission.seq
@@ -48,14 +48,15 @@ block content
 									input(name='screenshot[]', type='file')
 							.control-group(class=errors.blogPost != null ? 'error' : '', title=errors.blogPost)
 								label.control-label(for='blogPost') Post
+									br
+									| [
+									a(href='http://five.squarespace.com/display/ShowHelp?section=Markdown') Markdown
+									|  accepted]
 								.controls
 									textarea#blogPost.input-block-level(name='blogPost', rows='10', placeholder='Blog Post')= formData.blogPost
 							.control-group(style='margin-bottom: 0')
 								.controls
 									button#postButton.btn.btn-primary(type='submit', data-posting-text='Posting...', autocomplete='off') Post
-									span.help-inline(style='margin-left: 2.5em')
-										a(href='http://five.squarespace.com/display/ShowHelp?section=Markdown') Markdown
-										|  is accepted for formatting in posts
 			
 			#blog
 				for post in blogPosts
@@ -66,4 +67,4 @@ block content
 						- for(var page = 0; page < pageCount; page++)
 							li: a(href=genLink("/blog?page=#{page}"), data-page=page)= page + 1
 	else
-		p Development for SantaHack #{year} is not currently in progress yet.
+		p Development for SantaHack #{year} is not in progress yet.
