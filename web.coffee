@@ -158,7 +158,7 @@ if app.settings.env is 'development'
 		showStack: true
 else
 	app.use (err, req, res, next) ->
-		console.log err
+		console.log "[Server error]: #{err}"
 		res.status 500
 		res.render 'error-500'
 	app.use (err, req, res, next) ->
@@ -673,89 +673,6 @@ app.post /^\/(?:\d{4}\/)?submit$/, (req, res, next) ->
 					console.log "Error interacting with s3, results: ", results
 					next "Error interacting with S3..."
 			).catch(next)
-		
-			
-	###if not req.needsYearRedirect()
-		# deal with file uploads
-
-		blogPost =
-			date: new Date()
-			author: req.user.name
-			title: req.body.postTitle
-			content: req.body.blogPost
-
-		errors = {}
-
-		uploads = []
-
-		# validation
-		errors.postTitle = 'Please give the blog post a title.' if not blogPost.title or blogPost.title.length == 0
-		errors.blogPost = 'Please enter a blog post.' if not blogPost.content? or blogPost.content.length == 0
-
-		for file in _.flatten req.files.screenshot
-			if file.size > 0
-				if file.type not in [ 'image/png', 'image/jpeg', 'image/gif' ]
-					errors.screenshot = 'Only PNG, JPEG, and GIF images are allowed.'
-
-				id = lib.uuid.v1()
-				s3Name = "blogImages/#{id}"
-				s3Thumb = "blogImages/#{id}_t"
-
-				uploads.push
-					source: file.path
-					name: file.name
-					type: file.type
-					s3Name: s3Name
-					s3Thumb: s3Thumb
-
-		if Object.keys(errors).length > 0
-			for upload in uploads
-				lib.fs.unlink upload.source
-
-			res.render 'blog',
-				title: "SantaHack #{req.year} Blog"
-				errors: errors
-				formData:
-					postTitle: req.body.postTitle
-					blogPost: req.body.blogPost
-				blogPosts: []
-				pageCount: 1
-			return
-
-		if uploads.length > 0
-			seq = lib.seq()
-
-			uploads.forEach (upload) ->
-				seq.par(() -> s3.putFile upload.source, upload.s3Name, { 'Content-Type': upload.type, 'x-amz-acl': 'public-read' }, this)
-				seq.par(() ->
-					# generate thumbnail
-					imageMagick(upload.source)
-						.quality(63)
-						.resize(200)
-						.write("#{upload.source}_t", (err) => if err? then this err else s3.putFile "#{upload.source}_t", upload.s3Thumb, { 'Content-Type': upload.type, 'x-amz-acl': 'public-read' }, this)
-				)	
-
-			seq
-				.unflatten()
-				.seq((results) ->
-					# clean up uploads
-					for upload in uploads
-						lib.fs.unlink upload.source
-						lib.fs.unlink "#{upload.source}_t"
-
-					# check all results
-					if _.every(results, (res) -> res.statusCode == 200)
-						# everything is good! let's finalize the post!
-						blogPost.screenshots = uploads.map (upload) -> { name: upload.name, fullsize: upload.s3Name, thumbnail: upload.s3Thumb }
-
-						req.competitionEntry.addBlogPost blogPost
-						res.redirect res.locals.genLink '/blog'
-					else
-						next "Error uploading to S3..."
-				).catch(next)
-		else
-			req.competitionEntry.addBlogPost blogPost
-			res.redirect res.locals.genLink '/blog'###
 
 # /gift
 #todo now [for 2011]
