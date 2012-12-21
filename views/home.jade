@@ -22,4 +22,4 @@ block content
 		.pagination
 			ul
 				- for(var page = 0; page < pageCount; page++)
-					li: a(href=genLink("/home?page=#{page}"), data-page=page)= page + 1
+					li: a(href=genLink("/home/#{page}"), data-page=page)= page + 1

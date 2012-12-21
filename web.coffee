@@ -260,10 +260,11 @@ app.get '/info.json', (req, res, next) ->
 		).catch((err) -> next err)
 
 # /home
-app.get /^\/(?:\d{4}\/)?home$/, (req, res, next) ->
+app.get /^\/(?:\d{4}\/)?home(?:\/(\d+))?$/, (req, res, next) ->
 	if not req.needsYearRedirect()
+		page = req.params[0]
 		lib.seq()
-			.par('news', () -> data.getNews req.year, 5, (if req.query.page? then parseInt(req.query.page) * 5 else 0), this)
+			.par('news', () -> data.getNews req.year, 5, (if page? then parseInt(page) * 5 else 0), this)
 			.par('count', () -> data.getNewsCount req.year, this)
 			.seq(() ->
 				res.render 'home',
