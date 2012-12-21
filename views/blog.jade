@@ -15,7 +15,7 @@ mixin blogPost(post)
 		h3= post.title
 		span.date(title=utcDate(post.date)) Posted #{friendlyDate(post.date)} by #{post.author}
 			if typeof post.id !== 'undefined' && compState.seq <= competitionStates.DevelopmentIntermission.seq
-				.btn-group
+				.pull-right.btn-group
 					a.btn.btn-small(href=genLink("/blog/edit/#{post.id}")) Edit
 					a.btn.btn-small.btn-danger(href=genLink("/blog/delete/#{post.id}")) Delete
 		if post.screenshots != null
