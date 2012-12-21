@@ -11,10 +11,6 @@ block scripts
 block content
 	h2 Delete Blog Post
 	p Are you sure you want to delete the following post?
-		form.form-horizontal(method='POST')
-			.btn-group
-				button.btn.btn-danger(type='submit', name='delete') Delete
-				button.btn(type='submit', name='cancel') Cancel
 	.well
 		.blog-post
 			h3= post.title
@@ -24,3 +20,7 @@ block content
 					for image in post.screenshots
 						li.span3: a.lightbox(href=getS3Url(image.fullsize), title=image.name, rel="lightbox[#{post.author} #{post.title} #{post.date}]"): img(src=getS3Url(image.thumbnail))
 			span!= markdown(post.content)
+		form.form-horizontal(method='POST', style='margin-bottom: 0')
+			.btn-group
+				button.btn.btn-danger(type='submit', name='delete') Delete
+				button.btn(type='submit', name='cancel') Cancel
