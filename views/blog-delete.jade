@@ -1,0 +1,26 @@
+extends layout
+
+block additionalCSS
+	link(rel='stylesheet', href='/static/lib/lightbox/css/lightbox.css', media='screen')
+	link(rel='stylesheet', href='/static/css/blog.css')
+
+block scripts
+	script(type='text/javascript', src='/static/lib/lightbox/jquery.lightbox.js')
+	script(type='text/javascript', src='/static/js/blog.min.js')
+
+block content
+	h2 Delete Blog Post
+	p Are you sure you want to delete the following post?
+		form.form-horizontal(method='POST')
+			.btn-group
+				button.btn.btn-danger(type='submit', name='delete') Delete
+				button.btn(type='submit', name='cancel') Cancel
+	.well
+		.blog-post
+			h3= post.title
+			span.date(title=utcDate(post.date)) Posted #{friendlyDate(post.date)} by #{post.author}
+			if post.screenshots != null
+				ul.thumbnails
+					for image in post.screenshots
+						li.span3: a.lightbox(href=getS3Url(image.fullsize), title=image.name, rel="lightbox[#{post.author} #{post.title} #{post.date}]"): img(src=getS3Url(image.thumbnail))
+			span!= markdown(post.content)

@@ -12,6 +12,13 @@ $ () ->
 	
 	$('#postButton').click (e) ->
 		$(this).button 'posting'
+		# setTimeout, because calling button() does the same, otherwise our disable gets squashed
+		setTimeout (=> $(this).attr 'disabled', 'disabled'), 1
+	
+	$('#previewButton').click (e) ->
+		$(this).button 'previewing'
+		# setTimeout, because calling button() does the same, otherwise our disable gets squashed
+		setTimeout (=> $(this).attr 'disabled', 'disabled'), 1
 	
 	$('.lightbox').lightbox
 		fitToScreen: true

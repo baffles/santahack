@@ -10,9 +10,14 @@ block scripts
 	script(type='text/javascript', src='/static/js/blog.min.js')
 
 mixin blogPost(post)
+	- var compState = competition.getState()
 	.blog-post
 		h3= post.title
 		span.date(title=utcDate(post.date)) Posted #{friendlyDate(post.date)} by #{post.author}
+			if compState.seq <= competitionStates.DevelopmentIntermission.seq
+				.btn-group
+					a.btn.btn-small(href=genLink("/blog/edit/#{post.id}")) Edit
+					a.btn.btn-small.btn-danger(href=genLink("/blog/delete/#{post.id}")) Delete
 		if post.screenshots != null
 			ul.thumbnails
 				for image in post.screenshots
@@ -22,9 +27,9 @@ mixin blogPost(post)
 block content
 	h2 Blog
 	- var compState = competition.getState()
-	- var formData = (typeof formData !== 'undefined' && formData != null) ? formData : {}
+	- var editing = typeof editPost !== 'undefined' && editPost != null
+	- var data = editing ? editPost : {}
 	- var errors = (typeof errors !== 'undefined' && errors != null) ? errors : {}
-	- var validationFailed = Object.keys(errors).length > 0
 	if session.user == null
 		p Please 
 			a(href='/login?return=' + returnURL) login
@@ -37,34 +42,56 @@ block content
 				.well
 					h3(style='margin-top: 0') New Post
 					div
-						form.form-horizontal(method='POST', enctype='multipart/form-data', style='margin: 0')
-							.control-group(class=errors.postTitle != null ? 'error' : '', title=errors.postTitle)
-								label.control-label(for='postTitle') Title
+						if typeof errorText !== 'undefined' && errorText != null && errorText.length > 0
+							.alert
+								ul
+									for error in errorText
+										li= error
+						form.form-horizontal(method='POST', enctype='multipart/form-data', style='margin: 0', action=genLink('/blog'))
+							if data.id != null
+								input(name='id', type='hidden', value=data.id)
+							if typeof lastScreenshots !== 'undefined' && lastScreenshots != null
+								input(name='lastScreenshots', type='hidden', value=lastScreenshots)
+							.control-group(class=errors.postTitle ? 'error' : '')
+								label.control-label(for='title') Title
 								.controls
-									input#postTitle.input-block-level(name='postTitle', type='text', placeholder='Post Title', value=formData.postTitle, autocomplete='off')
-							.control-group(class=errors.screenshot != null ? 'error' : validationFailed ? 'warning' : '', title=errors.screenshot != null ? errors.screenshot : validationFailed ? 'Be sure to re-select any screenshots you had selected after fixing the errors.' : '')
+									input#title.input-block-level(name='title', type='text', placeholder='Post Title', value=data.title, autocomplete='off')
+							.control-group(class=errors.screenshot ? 'error' : '')
 								label#screenshotsLabel.control-label Screenshot
 								#screenshots.controls
+									if data.screenshots != null
+										for screenshot in data.screenshots
+											.existing-file
+												img.pull-left(src=getS3Url(screenshot.thumbnail))
+												|  #{screenshot.name}
+												label.checkbox.pull-right
+													| delete
+													input(name="deleteScreenshot[#{screenshot.id}]", type='checkbox')
 									input(name='screenshot[]', type='file')
-							.control-group(class=errors.blogPost != null ? 'error' : '', title=errors.blogPost)
-								label.control-label(for='blogPost') Post
+							.control-group(class=errors.content != null ? 'error' : '')
+								label.control-label(for='content') Post
 									br
 									| [
 									a(href='http://five.squarespace.com/display/ShowHelp?section=Markdown') Markdown
 									|  accepted]
 								.controls
-									textarea#blogPost.input-block-level(name='blogPost', rows='10', placeholder='Blog Post')= formData.blogPost
+									textarea#content.input-block-level(name='content', rows='10', placeholder='Blog Post')= data.content
 							.control-group(style='margin-bottom: 0')
-								.controls
+								.controls.btn-group
 									button#postButton.btn.btn-primary(type='submit', data-posting-text='Posting...', autocomplete='off') Post
+									button#previewButton.btn.btn(name='preview', type='submit', data-previewing-text='Previewing', autocomplete='off') Preview
+			if !editing
+				#blog
+					for post in blogPosts
+						mixin blogPost(post)
+				if pageCount > 1
+					.pagination
+						ul
+							- for(var page = 0; page < pageCount; page++)
+								li: a(href=genLink("/blog/#{page}"), data-page=page)= page + 1
 			
-			#blog
-				for post in blogPosts
-					mixin blogPost(post)
-			if pageCount > 1
-				.pagination
-					ul
-						- for(var page = 0; page < pageCount; page++)
-							li: a(href=genLink("/blog?page=#{page}"), data-page=page)= page + 1
+			if typeof previewPost !== 'undefined' && previewPost != null
+				h2 Preview
+				mixin blogPost(previewPost)
 	else
 		p Development for SantaHack #{year} is not in progress yet.

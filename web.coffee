@@ -434,97 +434,167 @@ app.get /^\/(?:\d{4}\/)?task$/, (req, res, next) ->
 			).catch((err) -> next err)
 
 # /blog
-# TODO: make blog page nicer (like submit page), including preview/edit/delete functionality
-app.get /^\/(?:\d{4}\/)?blog$/, (req, res, next) ->
+app.get /^\/(?:\d{4}\/)?blog(?:\/(\d+))?$/, (req, res, next) ->
 	if not req.needsYearRedirect()
-		firstPost = (if req.query.page? then parseInt(req.query.page) * 5 else 0)
+		page = req.params[0]
+		firstPost = (if page? then parseInt(page) * 5 else 0)
 		res.render 'blog',
 			title: "SantaHack #{req.year} Blog"
 			blogPosts: _.sortBy(req.competitionEntry?.blogPosts, 'date').reverse().slice(firstPost, firstPost + 5)
 			pageCount: Math.ceil req.competitionEntry?.blogPosts?.length / 5
 
+app.get /^\/(?:\d{4}\/)?blog\/edit\/([\w\-]+)$/, (req, res, next) ->
+	id = req.params[0]
+	post = _.first _.where req.competitionEntry.blogPosts, { id }
+	if post?
+		res.render 'blog',
+			title: "SantaHack #{req.year} Blog"
+			editPost: post
+			previewPost: post
+			lastScreenshots: JSON.stringify post.screenshots
+	else
+		res.redirect res.locals.genLink '/blog'
+
+app.get /^\/(?:\d{4}\/)?blog\/delete\/([\w\-]+)$/, (req, res, next) ->
+	id = req.params[0]
+	post = _.first _.where req.competitionEntry.blogPosts, { id }
+	if post?
+		res.render 'blog-delete',
+			title: "SantaHack #{req.year} Delete Blog Post"
+			post: post
+	else
+		res.redirect res.locals.genLink '/blog'
+
+app.post /^\/(?:\d{4}\/)?blog\/delete\/([\w\-]+)$/, (req, res, next) ->
+	id = req.params[0]
+	post = _.first _.where req.competitionEntry.blogPosts, { id }
+	if post?
+		if req.body.delete?
+			post.screenshots.forEach (screenshot) ->
+				s3.deleteFile screenshot.fullsize, () -> # just issue the request, don't care what happens
+				s3.deleteFile screenshot.thumbnail, () ->
+			
+			req.competitionEntry.deleteBlogPost post
+	
+	res.redirect res.locals.genLink '/blog'
+
 app.post /^\/(?:\d{4}\/)?blog$/, (req, res, next) ->
 	if not req.needsYearRedirect()
-		# deal with screenshots
+		previewOnly = req.body.preview?
 		
 		blogPost =
 			date: new Date()
+			id: req.body.id
 			author: req.user.name
-			title: req.body.postTitle
-			content: req.body.blogPost
-		
-		errors = {}
+			title: req.body.title
+			screenshots: if req.body.lastScreenshots? then JSON.parse(req.body.lastScreenshots) else []
+			content: req.body.content
 		
 		uploads = []
+		deletes = []
+		
+		errors =
+			postTitle: false
+			blogPost: false
+		
+		errorText = []
+		validPost = true
 		
 		# validation
-		errors.postTitle = 'Please give the blog post a title.' if not blogPost.title or blogPost.title.length == 0
-		errors.blogPost = 'Please enter a blog post.' if not blogPost.content? or blogPost.content.length == 0
+		if not blogPost.title or blogPost.title.length == 0
+			errors.postTitle = true
+			errorText.push 'Please give the blog post a title.'
+			validPost = false
 		
+		if not blogPost.content? or blogPost.content.length == 0
+			errors.blogPost = true
+			errorText.push 'Please enter a blog post.'
+			validPost = false
+		
+		# new screenshots
 		for file in _.flatten req.files.screenshot
 			if file.size > 0
 				if file.type not in [ 'image/png', 'image/jpeg', 'image/gif' ]
-					errors.screenshot = 'Only PNG, JPEG, and GIF images are allowed.'
-				
-				id = lib.uuid.v1()
-				s3Name = "blogImages/#{id}"
-				s3Thumb = "blogImages/#{id}_t"
-				
-				uploads.push
-					source: file.path
-					name: file.name
-					type: file.type
-					s3Name: s3Name
-					s3Thumb: s3Thumb
-		
-		if Object.keys(errors).length > 0
-			for upload in uploads
-				lib.fs.unlink upload.source
-			
-			res.render 'blog',
-				title: "SantaHack #{req.year} Blog"
-				errors: errors
-				formData:
-					postTitle: req.body.postTitle
-					blogPost: req.body.blogPost
-				blogPosts: []
-				pageCount: 1
-			return
-		
-		if uploads.length > 0
-			seq = lib.seq()
-			
-			uploads.forEach (upload) ->
-				seq.par(() -> s3.putFile upload.source, upload.s3Name, { 'Content-Type': upload.type, 'x-amz-acl': 'public-read' }, this)
-				seq.par(() ->
-					# generate thumbnail
-					imageMagick(upload.source)
-						.quality(63)
-						.resize(200)
-						.write("#{upload.source}_t", (err) => if err? then this err else s3.putFile "#{upload.source}_t", upload.s3Thumb, { 'Content-Type': upload.type, 'x-amz-acl': 'public-read' }, this)
-				)	
-			
-			seq
-				.unflatten()
-				.seq((results) ->
-					# clean up uploads
-					for upload in uploads
-						lib.fs.unlink upload.source
-						lib.fs.unlink "#{upload.source}_t"
+					errorText.push "#{file.name} is not a PNG, JPEG, or GIF."
+				else
+					id = lib.uuid.v1()
+					s3Name = "blogImages/#{id}"
+					s3Thumb = "blogImages/#{id}_t"
 					
-					# check all results
-					if _.every(results, (res) -> res.statusCode == 200)
-						# everything is good! let's finalize the post!
-						blogPost.screenshots = uploads.map (upload) -> { name: upload.name, fullsize: upload.s3Name, thumbnail: upload.s3Thumb }
-						
-						req.competitionEntry.addBlogPost blogPost
-						res.redirect res.locals.genLink '/blog'
+					screenshot =
+						id: id
+						name: file.name
+						fullsize: s3Name
+						thumbnail: s3Thumb
+					
+					blogPost.screenshots.push screenshot
+					
+					uploads.push
+						source: file.path
+						name: file.name
+						type: file.type
+						s3Name: s3Name
+						s3Thumb: s3Thumb
+		
+		# deleted screenshots
+		for toDelete in _.filter(blogPost.screenshots, (screenshot) -> req.body.deleteScreenshot?[screenshot.id]?)
+			deletes.push toDelete.fullsize
+			deletes.push toDelete.thumbnail
+		blogPost.screenshots = _.reject blogPost.screenshots, (screenshot) -> req.body.deleteScreenshot?[screenshot.id]?
+		
+		# process s3 uploads/deletes
+		seq = lib.seq()
+		
+		deletes.forEach (deleted) -> seq.par () -> s3.deleteFile deleted, this
+		seq.seq(() -> this()) # wait for deletes
+		
+		uploads.forEach (image) ->
+			seq.par(() -> s3.putFile image.source, image.s3Name, { 'Content-Type': image.type, 'x-amz-acl': 'public-read' }, this)
+			seq.par(() ->
+				# generate thumbnail and upload
+				imageMagick(image.source)
+					.quality(63)
+					.resize(200)
+					.write("#{image.source}_t", (err) => if err? then this err else s3.putFile "#{image.source}_t", image.s3Thumb, { 'Content-Type': image.type, 'x-amz-acl': 'public-read' }, this)
+			)
+		
+		seq
+			.unflatten()
+			.seq((results) ->
+				# clean up temp files from disk
+				for file in _.flatten req.files
+					lib.fs.unlink file.path
+				for image in uploads
+					lib.fs.unlink "#{image.source}_t"
+				
+				# check all results
+				if _.every(results, (res) -> res.statusCode == 200)
+					# save/edit as appropriate
+					if validPost and not previewOnly
+						if blogPost.id?
+							# save edit
+							req.competitionEntry.updateBlogPost blogPost
+						else
+							# save new post
+							blogPost.id = lib.uuid.v1()
+							req.competitionEntry.addBlogPost blogPost
+					
+					if previewOnly or errorText.length > 0
+						# show edit page for post; if post itself was valid then we save it
+						res.render 'blog',
+							title: "SantaHack #{req.year} Blog"
+							editPost: blogPost
+							previewPost: blogPost
+							lastScreenshots: if not validPost or previewOnly then JSON.stringify(blogPost.screenshots) else null
+							errors: errors
+							errorText: errorText
 					else
-						next "Error uploading to S3..."
-				).catch(next)
-		else
-			req.competitionEntry.addBlogPost blogPost
-			res.redirect res.locals.genLink '/blog'
+						# redirect
+						res.redirect res.locals.genLink '/blog'
+				else
+					console.log "Error interacting with s3, results: ", results
+					next "Error interacting with S3..."
+			).catch(next)
 
 # /submit
 app.get /^\/(?:\d{4}\/)?submit$/, (req, res) ->
@@ -686,6 +756,7 @@ app.post /^\/(?:\d{4}\/)?submit$/, (req, res, next) ->
 
 # admin functions
 # TODO: should do better w/ check errors from DB on updates/saves on admin pages
+# TODO: add function to remove orphaned s3 uploads (or do that in cake?)
 app.get '/admin/getCompetitionList', (req, res) ->
 	if not req.session?.user?.isAdmin
 		res.json 401, { success: false, error: 'Unauthorized' }
