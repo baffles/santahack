@@ -50,9 +50,11 @@ block content
 						form.form-horizontal(method='POST', enctype='multipart/form-data', style='margin: 0', action=genLink('/blog'))
 							if data.id != null
 								input(name='id', type='hidden', value=data.id)
+							if data.date != null
+								input(name='date', type='hidden', value=JSON.stringify(data.date))
 							if typeof lastScreenshots !== 'undefined' && lastScreenshots != null
 								input(name='lastScreenshots', type='hidden', value=lastScreenshots)
-							.control-group(class=errors.postTitle ? 'error' : '')
+							.control-group(class=errors.title ? 'error' : '')
 								label.control-label(for='title') Title
 								.controls
 									input#title.input-block-level(name='title', type='text', placeholder='Post Title', value=data.title, autocomplete='off')

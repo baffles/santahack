@@ -498,7 +498,7 @@ app.post /^\/(?:\d{4}\/)?blog$/, (req, res, next) ->
 			previewOnly = req.body.preview?
 		
 			blogPost =
-				date: new Date()
+				date: if req.body.id? and req.body.date? then new Date(JSON.parse(req.body.date)) else new Date()
 				id: req.body.id
 				author: req.user.name
 				title: req.body.title
@@ -517,12 +517,12 @@ app.post /^\/(?:\d{4}\/)?blog$/, (req, res, next) ->
 		
 			# validation
 			if not blogPost.title or blogPost.title.length == 0
-				errors.postTitle = true
+				errors.title = true
 				errorText.push 'Please give the blog post a title.'
 				validPost = false
 		
 			if not blogPost.content? or blogPost.content.length == 0
-				errors.blogPost = true
+				errors.content = true
 				errorText.push 'Please enter a blog post.'
 				validPost = false
 		
