@@ -27,19 +27,21 @@ $ () ->
 		fileBottomNavCloseImage: '/static/lib/lightbox/images/closelabel.gif'
 		displayDownloadLink: true
 	
+	###
 	# note to self: on ajax pagination, deal with lightboxes
-	###$('.pagination a').click (e) ->
+	$('.pagination a').click (e) ->
 		e.preventDefault()
 		page = parseInt $(this).attr 'data-page'
 		
 		$.ajax
-			url: "news.json?page=#{page}"
-			success: (news) ->
-				$news = $('#news')
-				$news.empty()
+			url: "blog.json?page=#{page}"
+			success: (posts) ->
+				$blog = $('#blog')
+				$blog.empty()
 				
-				for post in news
-					$post = $('<div>').addClass 'news-item'
+				for post in posts
+					# TODO: emit proper output.
+					$post = $('<div>').addClass 'blog-post'
 					$post.append $('<h3>').text post.title
 					$post.append $('<span>').addClass('date').attr('title', post.utcDate).text "Posted #{post.friendlyDate}"
 					$post.append $('<span>').html post.html
@@ -47,4 +49,5 @@ $ () ->
 				
 				$.scrollTo $news
 			error: (req, status, errMsg) ->
-				alert "Error loading news: #{status}\n#{errMsg}"###
+				alert "Error loading news: #{status}\n#{errMsg}"
+	###

@@ -444,6 +444,19 @@ app.get /^\/(?:\d{4}\/)?blog(?:\/(\d+))?$/, (req, res, next) ->
 			blogPosts: _.sortBy(req.competitionEntry?.blogPosts, 'date').reverse().slice(firstPost, firstPost + 5)
 			pageCount: Math.ceil req.competitionEntry?.blogPosts?.length / 5
 
+app.get /^\/(?:\d{4}\/)?blog.json$/, (req, res) ->
+	if not req.needsYearRedirect()
+		page = req.query.page
+		firstPost = (if page? then parseInt(page) * 5 else 0)
+		posts = _.sortBy(req.competitionEntry?.blogPosts, 'date').reverse().slice(firstPost, firstPost + 5)
+		
+		for post in posts
+			post.utcDate = app.locals.utcDate post.date
+			post.friendlyDate = app.locals.friendlyDate post.date
+			post.html = app.locals.markdown post.content
+		
+		res.json posts
+
 app.get /^\/(?:\d{4}\/)?blog\/edit\/([\w\-]+)$/, (req, res, next) ->
 	id = req.params[0]
 	post = _.first _.where req.competitionEntry.blogPosts, { id }
