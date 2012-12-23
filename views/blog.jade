@@ -18,7 +18,7 @@ mixin blogPost(post)
 				.pull-right.btn-group
 					a.btn.btn-small(href=genLink("/blog/edit/#{post.id}")) Edit
 					a.btn.btn-small.btn-danger(href=genLink("/blog/delete/#{post.id}")) Delete
-		if post.screenshots != null
+		if post.screenshots != null && post.screenshots.length > 0
 			ul.thumbnails
 				for image in post.screenshots
 					li.span3: a.lightbox(href=getS3Url(image.fullsize), title=image.name, rel="lightbox[#{post.author} #{post.title} #{post.date}]"): img(src=getS3Url(image.thumbnail))
