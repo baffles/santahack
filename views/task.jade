@@ -14,17 +14,6 @@ block content
 		if competitionEntry == null || !competitionEntry.isEligible
 			p You did not join and fulfill all the requirements for SantaHack #{year}. Better luck next year!
 		else
-			//
-				|||if in development
-				<h3>Development</h3>
-				<p>You've been given a week to develop this game. Review the <a href="{{ path('rules') }}">rules</a> if necessary, then get cracking!</p>
-				<p>We're still putting the finishing touches on the site, so <strong>check back later in the week</strong> for a page to submit your entry on (it should go live by mid-week at the latest). A link will appear on the navigation bar at the top of the page, on this page itself, and there will be a news item posted about it. You won't be able to miss it!</p>
-				{% elseif state >= constant('BAF\\SantaHackBundle\\Entity\\CompetitionState::DevelopmentGrace') %}
-				<h3>Results</h3>
-				{% if submission != null %}
-				<p>You submitted <strong>{{ submission.getName() }}</strong>, hopefully fulfilling the wishes of <strong>{{ task.getUser().getName() }}</strong>! Good job!</p>
-				{% else %}
-				<p>Unfortunately, you never submitted a game for <strong>{{ task.getUser().getName() }}</strong>. But don't worry, we'll give him another game he should like. Better luck next year!</p>
 			h3 Your Task
 			p Santa and the elves need your help! They have sent you a specific task, and request your assistance for the week. In return for your
 				| willingness to help, Santa will make sure you receive a gift of your own.
@@ -53,9 +42,15 @@ block content
 					|  page. You may submit as many times as you like; your last submission will be the one that is used.
 			else
 				h3 Results
-				if submission != null
-					p You submitted
+				if competitionEntry.submission != null
+					p You submitted 
+						strong= competitionEntry.submission.name
+						| , hopefully fulfilling the wishes of 
+						strong= task.user.name
+						| ! Good job!
 				else
-					p You suck
+					p Unfortunately, you never submitted a game for 
+						strong= task.user.name
+						| . But don't worry, we'll give them another game they should like. Better luck next year!
 	else
 		p Development for SantaHack #{year} is not currently in progress yet.

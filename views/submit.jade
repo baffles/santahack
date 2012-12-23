@@ -113,7 +113,6 @@ block content
 						.controls
 							button#saveButton.btn.btn-primary(type='submit', data-uploading-text='Uploading...', autocomplete='off') Save
 	else
-		if typeof competitionEntry !== 'undefined' && competitionEntry != null && competitionEntry.submission != null
-			p Display link to task page?
-		else
-			p I'm sorry, but it looks like you never completed an entry for SantaHack #{year}. Better luck next year!
+		p You may view your submission information over on the 
+			a(href=genLink('/task')) task page
+			| .

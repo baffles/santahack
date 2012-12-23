@@ -33,7 +33,7 @@ html
 							li: a(href=genLink('/vote')) Voting
 						if competitionEntry.isEligible && compSeq >= competitionStates.Development.seq
 							li: a(href=genLink('/task')) Task
-							if compSeq <= competitionStates.DevelopmentIntermission.seq
+							if compSeq < competitionStates.DevelopmentIntermission.seq
 								li: a(href=genLink('/blog')) Blog
 								li: a(href=genLink('/submit')) Submission
 						if competitionEntry.isEligible && compSeq > competitionStates.DevelopmentIntermission.seq
@@ -45,7 +45,6 @@ html
 					|  for the best experience on this site.
 			if typeof(warnMsg) !== 'undefined' && warnMsg != null && showWarnMsg
 				.alert.alert-warn
-					//button.close(type='button', onClick='$(this).parent().slideUp()') &times;</button>
 					span
 						strong Uh oh...
 						|  

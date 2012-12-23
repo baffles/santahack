@@ -14,7 +14,7 @@ mixin blogPost(post)
 	.blog-post
 		h3= post.title
 		span.date(title=utcDate(post.date)) Posted #{friendlyDate(post.date)} by #{post.author}
-			if typeof post.id !== 'undefined' && compState.seq <= competitionStates.DevelopmentIntermission.seq
+			if typeof post.id !== 'undefined' && compState.seq < competitionStates.DevelopmentIntermission.seq
 				.pull-right.btn-group
 					a.btn.btn-small(href=genLink("/blog/edit/#{post.id}")) Edit
 					a.btn.btn-small.btn-danger(href=genLink("/blog/delete/#{post.id}")) Delete
@@ -38,7 +38,7 @@ block content
 		if typeof competitionEntry === 'undefined' || competitionEntry == null || !competitionEntry.isEligible
 			p You did not join and fulfill all the requirements for SantaHack #{year}. Better luck next year!
 		else
-			if compState.seq <= competitionStates.DevelopmentIntermission.seq
+			if compState.seq < competitionStates.DevelopmentIntermission.seq
 				.well
 					h3(style='margin-top: 0') New Post
 					div
