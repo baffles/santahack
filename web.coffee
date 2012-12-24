@@ -1036,8 +1036,8 @@ app.post '/admin/runGifting', (req, res) ->
 	lib.seq()
 		.par('completeSubmissions', () -> data.getCompleteSubmissions parseInt(req.query.year), this)
 		.par('pairings', () -> data.getPairings parseInt(req.query.year), this)
-		#.seq('canDev', () -> data.getCanDevInfo parseInt(req.query.year), this)
 		.seq(() ->
+			console.log @vars
 			giftPairing = {}
 			errors = []
 			
