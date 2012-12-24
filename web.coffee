@@ -1037,7 +1037,6 @@ app.post '/admin/runGifting', (req, res) ->
 		.par('completeSubmissions', () -> data.getCompleteSubmissions parseInt(req.query.year), this)
 		.par('pairings', () -> data.getPairings parseInt(req.query.year), this)
 		.seq(() ->
-			console.log @vars
 			giftPairing = {}
 			errors = []
 			
@@ -1064,7 +1063,7 @@ app.post '/admin/runGifting', (req, res) ->
 				# find and assign best pairing
 				if submissionScores.length > 0
 					newAssignment = _.sortBy(submissionScores, 'score')[0].submission
-					giftPairing[incomplete.assignment] = { user: newAssignment, isOriginal: false, original: incomplete.assignment }
+					giftPairing[incomplete.assignment] = { user: newAssignment, isOriginal: false, original: incomplete.user }
 				else
 					errors.push "No possible gift pairings for user #{incomplete.assignment}."
 					giftPairing[incomplete.assignment] = { error: 'No possible pairings.' }
