@@ -1,0 +1,73 @@
+extends layout
+
+block additionalCSS
+	link(rel='stylesheet', href='/static/lib/lightbox/css/lightbox.css', media='screen')
+
+block scripts
+	script(type='text/javascript', src='/static/lib/lightbox/jquery.lightbox.js')
+	script(type='text/javascript', src='/static/js/gift.min.js')
+
+block content
+	h2 Your Gift
+	- var compState = competition.getState()
+	if session.user == null
+		p Please 
+			a(href='/login?return=' + returnURL) login
+			|  to vote.
+	else if compState.seq >= competitionStates.ReleasePrivate.seq
+		if competitionEntry == null || !competitionEntry.isEligible
+			p You did not join and fulfill all the requirements for SantaHack #{year}. Better luck next year!
+		else if competitionEntry.gift == null || competitionEntry.gift.error != null
+			p Oh no, something has gone wrong. I don't see a gift for you. Check with BAF to figure out what went wrong!
+		else	
+			p Merry Christmas! Santa has left a gift for you! 
+				if competitionEntry.gift.isOriginal
+					| It should be everything you wished for! 
+				else
+					| It's not exactly what you wished for, but Santa hopes you will like it. 
+					| Your wishlist was given to 
+					strong= originalSanta.name
+					| , but unfortunately was not finished.
+					if originalEntry.blogPosts != null && originalEntry.blogPosts.length > 0
+						|  They did keep a blog, however, that you may view 
+						a(href=genLink("/blog/user/#{originalSanta.id}")) here
+						| .
+			p The name of the game is 
+				if giftData.website.length > 0
+					a(href=giftData.website): strong= giftData.name
+				else
+					strong= giftData.name
+				|  and it was created by 
+				strong= secretSanta.name
+				| .
+			if giftData.screenshots != null && giftData.screenshots.length > 0
+				ul.thumbnails
+					for image in giftData.screenshots
+						li.span3: a.lightbox(href=getS3Url(image.fullsize), title=image.name, rel="lightbox"): img(src=getS3Url(image.thumbnail))
+			.well!= markdown(giftData.description)
+			p The game implements the following ideas:
+				ul
+					for wish, idx in giftWishlist.wishes
+						if giftData.implementsWish[idx]
+							li: strong= wish
+			if competitionEntry.gift.isOriginal && giftData.privateNote != null && giftData.privateNote.length > 0
+				p
+					strong= secretSanta.name
+					|  left you a note about the game as well:
+					.well!= markdown(giftData.privateNote)
+			p Here are the goodies:
+				ul
+					li Source Code: 
+						a(href=getS3Url(giftData.sourcePack.path))= giftData.sourcePack.name
+						|  (#{displayBytes(giftData.sourcePack.size)})
+					if giftData.binaryPack != null
+						li Binary Pack: 
+							a(href=getS3Url(giftData.binaryPack.path))= giftData.binaryPack.name
+							|  (#{displayBytes(giftData.binaryPack.size)})
+			if giftEntry.blogPosts != null && giftEntry.blogPosts.length > 0
+				p A blog was kept during development, and you may view it 
+					a(href=genLink("/blog/user/#{secretSanta.id}")) here
+					| .
+			p Hope you like it! Merry Christmas!
+	else
+		p Gifts for SantaHack #{year} have not been released yet.

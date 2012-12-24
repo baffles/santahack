@@ -432,7 +432,7 @@ app.get /^\/(?:\d{4}\/)?task$/, (req, res, next) ->
 				res.render 'task',
 					title: "SantaHack #{req.year} Task"
 					task: task
-			).catch((err) -> next err)
+			).catch next
 
 # /blog
 app.get /^\/(?:\d{4}\/)?blog(?:\/(\d+))?$/, (req, res, next) ->
@@ -766,7 +766,27 @@ app.post /^\/(?:\d{4}\/)?submit$/, (req, res, next) ->
 			).catch(next)
 
 # /gift
-# TODO: /gift page
+app.get /^\/(?:\d{4}\/)?gift$/, (req, res, next) ->
+	if not req.needsYearRedirect()
+		lib.seq()
+			.par('gift', () -> req.competitionEntry?.getGift this)
+			.par('secretSanta', () -> if req.competitionEntry?.gift?.user? then data.getUserData req.competitionEntry.gift.user, this else this null, null)
+			.par('originalSanta', () -> if req.competitionEntry?.gift?.original? then data.getUserData req.competitionEntry.gift.original, this else this null, null)
+			.par('giftWishlist', () -> data.getUserWishlist req.competitionEntry?.gift?.user, req.year, this)
+			.seq(() -> this null, null)
+			.par('giftEntry', () -> if @vars.secretSanta? then data.getUserCompetitionEntry @vars.secretSanta, req.competition, this else this null, null)
+			.par('originalEntry', () -> if @vars.originalSanta? then data.getUserCompetitionEntry @vars.originalSanta, req.competition, this else this null, null)
+			.seq(() ->
+				console.log @vars
+				res.render 'gift',
+					title: "SantaHack #{req.year} Gift"
+					giftData: @vars.gift
+					giftWishlist: @vars.giftWishlist
+					secretSanta: @vars.secretSanta
+					originalSanta: @vars.originalSanta
+					giftEntry: @vars.giftEntry
+					originalEntry: @vars.originalEntry
+			).catch next
 
 # /downloads
 # TODO: /downloads page

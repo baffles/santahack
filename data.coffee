@@ -134,6 +134,7 @@ module.exports = class Data
 			entry.updateBlogPost = (post) => @updateBlogPost entry, post
 			entry.deleteBlogPost = (post) => @deleteBlogPost entry, post
 			entry.saveSubmission = (submission) => @saveSubmission entry, submission
+			entry.getGift = (callback) => @getGift entry, callback
 			
 			entry.getAssignment = (callback) =>
 				if entry.assignment?
@@ -195,6 +196,7 @@ module.exports = class Data
 			delete entry.updateBlogPost
 			delete entry.deleteBlogPost
 			delete entry.saveSubmission
+			delete entry.getGift
 			
 			if entry.wishlist?
 				delete entry.wishlist.getMachinePerformanceDisplay
@@ -392,6 +394,13 @@ module.exports = class Data
 	saveGiftings: (year, giftings) ->
 		for user, gift of giftings
 			@entriesCollection.update { user, year }, { $set: { gift } }
+	
+	getGift: (entry, callback) ->
+		if entry.gift.user?
+			@entriesCollection.find({ year: entry.year, user: entry.gift.user }, { submission: 1 }).toArray (err, entry) ->
+				callback err, entry?[0]?.submission
+		else
+			callback null, null
 	
 	# Users
 	# upgrade user object with helper functions from this class
