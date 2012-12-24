@@ -802,8 +802,8 @@ app.get /^\/(?:\d{4}\/)?gift$/, (req, res, next) ->
 			.par('gift', () -> req.competitionEntry?.getGift this)
 			.par('secretSanta', () -> if req.competitionEntry?.gift?.user? then data.getUserData req.competitionEntry.gift.user, this else this null, null)
 			.par('originalSanta', () -> if req.competitionEntry?.gift?.original? then data.getUserData req.competitionEntry.gift.original, this else this null, null)
-			.par('giftWishlist', () -> data.getUserWishlist req.competitionEntry?.gift?.user, req.year, this)
-			.seq(() -> this null, null)
+			.par('giftWishlist', () -> if req.competitionEntry?.gift?.user? then data.getUserWishlist req.competitionEntry?.gift?.user, req.year, this else this null, null)
+			.seq(() -> this null, null) # do the above before the blow
 			.par('giftEntry', () -> if @vars.secretSanta? then data.getUserCompetitionEntry @vars.secretSanta, req.competition, this else this null, null)
 			.par('originalEntry', () -> if @vars.originalSanta? then data.getUserCompetitionEntry @vars.originalSanta, req.competition, this else this null, null)
 			.seq(() ->
