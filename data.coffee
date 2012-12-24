@@ -328,6 +328,7 @@ module.exports = class Data
 					@entriesCollection.update { user: entry.user }, { $set: { hasVoted: true } }
 	
 	getEligibility: (year, callback) ->
+		throw 'callback required' if not callback?
 		seq()
 			.seq_((s) => @entriesCollection.find({ year: year }, { user: 1, isEligible: 1 }).toArray s)
 			.flatten()
@@ -348,6 +349,7 @@ module.exports = class Data
 			}, { $set: { isEligible: true } }, false, true
 	
 	getEligibleWishVotes: (year, callback) ->
+		throw 'callback required' if not callback?
 		seq()
 			.seq_((s) => @entriesCollection.find({ year, isEligible: true }, { user: 1, votesCast: 1 }).toArray s)
 			.forEach((entries) -> @into('eligible') null, entries.map (entry) -> entry.user)
@@ -366,6 +368,7 @@ module.exports = class Data
 			.catch((err) -> callback err, null)
 	
 	getPairings: (year, callback) ->
+		throw 'callback required' if not callback?
 		@entriesCollection.find({ year: year, assignment: { $exists: true } }, { user: 1, assignment: 1 }).toArray callback
 	
 	savePairings: (year, pairings) ->
@@ -381,10 +384,21 @@ module.exports = class Data
 	deleteBlogPost: (entry, post) ->
 		@entriesCollection.update({ year: entry.year, user: entry.user, 'blogPosts.id': post.id }, { $pull: { 'blogPosts': post } })
 	
+	getBlogPost: (id, callback) ->
+		throw 'callback required' if not callback?
+		@entriesCollection.find({ 'blogPosts.id': id }, { blogPosts: 1 }).toArray (err, entry) ->
+			callback err, _.find entry?[0]?.blogPosts, (post) -> post.id is id
+	
+	getBlogPosts: (competition, callback) ->
+		throw 'callback required' if not callback?
+		@entriesCollection.find({ year: competition.year }, { blogPosts: 1 }).toArray (err, entry) ->
+			callback err, _.flatten _.map entry (entry) -> entry.blogPosts
+	
 	saveSubmission: (entry, submission) ->
 		@entriesCollection.update { user: entry.user, year: entry.year }, { $set: { submission } }
 	
 	getCompleteSubmissions: (year, callback) ->
+		throw 'callback required' if not callback?
 		@entriesCollection.find({ year: year, submission: { $exists: true }, $where: () ->
 				implementsWish = false
 				if @submission.implementsWish? then (if b then implementsWish = true) for b in @submission.implementsWish
@@ -396,6 +410,7 @@ module.exports = class Data
 			@entriesCollection.update { user, year }, { $set: { gift } }
 	
 	getGift: (entry, callback) ->
+		throw 'callback required' if not callback?
 		if entry.gift.user?
 			@entriesCollection.find({ year: entry.year, user: entry.gift.user }, { submission: 1 }).toArray (err, entry) ->
 				callback err, entry?[0]?.submission

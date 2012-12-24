@@ -479,9 +479,39 @@ app.get /^\/(?:\d{4}\/)?blog\/delete\/([\w\-]+)$/, (req, res, next) ->
 	else
 		res.redirect res.locals.genLink '/blog'
 
+app.get /^\/(?:\d{4}\/)?blog\/user\/([\w\-]+)(?:\/(\d+))?$/, (req, res, next) ->
+	id = req.params[0]
+	page = req.params[1]
+	
+	if req.user?.id is id or req.competition.getState() is lib.data.competitionStates.ReleasePublic or (req.competition.getState() is lib.data.competitionStates.ReleasePrivate and (req.competitionEntry?.gift?.user is id or req.competitionEntry?.gift?.original is id))
+		lib.seq()
+			.par('entry', () -> data.getUserCompetitionEntry { id }, req.competition, this)
+			.par('userData', () -> data.getUserData id, this)
+			.seq(() ->
+				firstPost = (if page? then parseInt(page) * 5 else 0)
+				res.render 'blog',
+					title: "SantaHack #{req.year} Blog: #{@vars.userData.name}"
+					userName: @vars.userData.name
+					blogPosts: _.sortBy(@vars.entry?.blogPosts, 'date').reverse().slice(firstPost, firstPost + 5)
+					pageCount: Math.ceil @vars.entry?.blogPosts?.length / 5
+			).catch next
+	else
+		res.redirect res.locals.genLink '/'
+
+app.get /^\/(?:\d{4}\/)?blog\/post\/([\w\-]+)(?:\/(\d+))?$/, (req, res, next) ->
+	id = req.params[0]
+	lib.seq()
+		.seq(() -> data.getBlogPost id, this)
+		.seq((post) ->
+			res.render 'blog',
+				title: "SantaHack #{req.year} Blog Post"
+				blogPosts: [ post ]
+				pageCount: 0
+		).catch next
+
 app.post /^\/(?:\d{4}\/)?blog\/delete\/([\w\-]+)$/, (req, res, next) ->
 	id = req.params[0]
-	post = _.first _.where req.competitionEntry.blogPosts, { id }
+	post = _.find req.competitionEntry.blogPosts, (post) -> post.id is id
 	if post? and lib.data.competitionStates.Development.seq <= req.competition.getState().seq <= lib.data.competitionStates.DevelopmentGrace.seq
 		if req.body.delete?
 			post.screenshots.forEach (screenshot) ->
@@ -777,7 +807,6 @@ app.get /^\/(?:\d{4}\/)?gift$/, (req, res, next) ->
 			.par('giftEntry', () -> if @vars.secretSanta? then data.getUserCompetitionEntry @vars.secretSanta, req.competition, this else this null, null)
 			.par('originalEntry', () -> if @vars.originalSanta? then data.getUserCompetitionEntry @vars.originalSanta, req.competition, this else this null, null)
 			.seq(() ->
-				console.log @vars
 				res.render 'gift',
 					title: "SantaHack #{req.year} Gift"
 					giftData: @vars.gift

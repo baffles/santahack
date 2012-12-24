@@ -11,13 +11,14 @@ block scripts
 
 mixin blogPost(post)
 	- var compState = competition.getState()
-	.blog-post
+	.blog-post(id=post.id)
 		h3= post.title
 		span.date(title=utcDate(post.date)) Posted #{friendlyDate(post.date)} by #{post.author}
-			if typeof post.id !== 'undefined' && compState.seq < competitionStates.DevelopmentIntermission.seq
-				.pull-right.btn-group
-					a.btn.btn-small(href=genLink("/blog/edit/#{post.id}")) Edit
-					a.btn.btn-small.btn-danger(href=genLink("/blog/delete/#{post.id}")) Delete
+		span.permalink: a(href=genLink("/blog/post/#{post.id}")) permalink
+		if typeof post.id !== 'undefined' && compState.seq < competitionStates.DevelopmentIntermission.seq
+			.pull-right.btn-group
+				a.btn.btn-small(href=genLink("/blog/edit/#{post.id}")) Edit
+				a.btn.btn-small.btn-danger(href=genLink("/blog/delete/#{post.id}")) Delete
 		if post.screenshots != null && post.screenshots.length > 0
 			ul.thumbnails
 				for image in post.screenshots
@@ -25,7 +26,10 @@ mixin blogPost(post)
 		span!= markdown(post.content)
 
 block content
-	h2 Blog
+	if typeof userName !== 'undefined' && userName != null
+		h2 #{userName}'s Blog
+	else
+		h2 Blog
 	- var compState = competition.getState()
 	- var editing = typeof editPost !== 'undefined' && editPost != null
 	- var data = editing ? editPost : {}
