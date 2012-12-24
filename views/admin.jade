@@ -16,6 +16,7 @@ html
 		script(type='text/javascript', src='/static/admin/tabs/edit-wishes.min.js')
 		script(type='text/javascript', src='/static/admin/tabs/eligibility.min.js')
 		script(type='text/javascript', src='/static/admin/tabs/run-pairing.min.js')
+		script(type='text/javascript', src='/static/admin/tabs/run-gifting.min.js')
 		:coffeescript
 			$ () ->
 				Admin.addTab 'competition', 'Competition Info', new CompetitionInfoTab()
@@ -23,7 +24,7 @@ html
 				Admin.addTab 'wishlists', 'Edit Wishes', new EditWishesTab()
 				Admin.addTab 'eligibility', 'Eligibility', new EligibilityTab()
 				Admin.addTab 'pairings', 'Pairing', new RunPairingTab()
-				# pairings/assignments, pairings/gifts. maybe other stuff as necessary, but that stuff comes after the competition workflow
+				Admin.addTab 'gifting', 'Gifting', new RunGiftingTab()
 				
 				Admin.selectTab 'competition'
 		:stylus

@@ -975,6 +975,58 @@ app.post '/admin/runPairing', (req, res) ->
 			else
 				res.json { success: true, summary: 'Nothing done; not enough eligible participants.' }
 		).catch((err) -> res.json 500, { success: false, error: err })
+		
+app.post '/admin/runGifting', (req, res) ->
+	if not req.session?.user?.isAdmin
+		res.json 401, { success: false, error: 'Unauthorized' }
+		return
+	if not req.query.year?
+		res.json { success: false, error: 'Missing year parameter' }
+		return
+
+	lib.seq()
+		.par('completeSubmissions', () -> data.getCompleteSubmissions parseInt(req.query.year), this)
+		.par('pairings', () -> data.getPairings parseInt(req.query.year), this)
+		#.seq('canDev', () -> data.getCanDevInfo parseInt(req.query.year), this)
+		.seq(() ->
+			giftPairing = {}
+			errors = []
+			
+			for complete in @vars.completeSubmissions
+				giftPairing[complete.assignment] = { user: complete.user, isOriginal: true }
+			
+			for incomplete in _.reject(@vars.pairings, (pairing) -> giftPairing[pairing.assignment]?)
+				# assign a gift for pairing.assignment
+				rec = _.find @vars.pairings, (pairing) -> pairing.user is incomplete.assignment
+				
+				# score each completed submission for this user
+				submissionScores = []
+				for submission in @vars.completeSubmissions
+					if submission.user isnt incomplete.assignment
+						wishlist = submission.assignment
+						wishes = _.map submission.submission.implementsWish, (val, idx) -> if val then idx else null
+						wishes = _.filter wishes, (val) -> val?
+					
+						# TODO: take into account platform matches between submission's original wishlist, and the user being assigned
+						votes = _.map wishes, (wish) -> _.find rec.votesCast, (vote) -> vote.destUser is wishlist and vote.wish is wish
+					
+						submissionScores.push { submission: submission.user, score: _.reduce(votes, ((sum, vote) -> sum + vote), 0) / votes.length }
+				
+				# find and assign best pairing
+				if submissionScores.length > 0
+					newAssignment = _.sortBy(submissionScores, 'score')[0].submission
+					giftPairing[incomplete.assignment] = { user: newAssignment, isOriginal: false, original: incomplete.assignment }
+				else
+					errors.push "No possible gift pairings for user #{incomplete.assignment}."
+					giftPairing[incomplete.assignment] = { error: 'No possible pairings.' }
+			
+			data.saveGiftings parseInt(req.query.year), giftPairing
+			
+			if errors.length is 0
+				res.json { success: true, summary: 'Gifting complete.' }
+			else
+				res.json { success: true, summary: "Gifting complete, with following errors:\n#{errors.join('\n')}" }
+		).catch((err) -> res.json 500, { success: false, error: err })
 
 app.listen process.env.PORT
 console.log "Express server at http://localhost:#{process.env.PORT}/ in #{process.env.ENV} mode" # printing app.settings.env doesn't work, wtf?

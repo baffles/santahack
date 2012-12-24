@@ -363,6 +363,9 @@ module.exports = class Data
 			.seq((canDev) -> callback null, canDev)
 			.catch((err) -> callback err, null)
 	
+	getPairings: (year, callback) ->
+		@entriesCollection.find({ year: year, assignment: { $exists: true } }, { user: 1, assignment: 1 }).toArray callback
+	
 	savePairings: (year, pairings) ->
 		for pairing in pairings
 			@entriesCollection.update({ year: year, user: pairing.sourceUser}, { $set: { assignment: pairing.destUser } })
@@ -378,6 +381,17 @@ module.exports = class Data
 	
 	saveSubmission: (entry, submission) ->
 		@entriesCollection.update { user: entry.user, year: entry.year }, { $set: { submission } }
+	
+	getCompleteSubmissions: (year, callback) ->
+		@entriesCollection.find({ year: year, submission: { $exists: true }, $where: () ->
+				implementsWish = false
+				if @submission.implementsWish? then (if b then implementsWish = true) for b in @submission.implementsWish
+				@submission.name?.length > 0 and @submission.description?.length > 0 and @submission.sourcePack? and implementsWish
+			}).toArray callback
+	
+	saveGiftings: (year, giftings) ->
+		for user, gift of giftings
+			@entriesCollection.update { user, year }, { $set: { gift } }
 	
 	# Users
 	# upgrade user object with helper functions from this class
