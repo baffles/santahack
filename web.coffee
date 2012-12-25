@@ -439,10 +439,11 @@ app.get /^\/(?:\d{4}\/)?blog(?:\/(\d+))?$/, (req, res, next) ->
 	if not req.needsYearRedirect()
 		page = req.params[0]
 		firstPost = (if page? then parseInt(page) * 5 else 0)
+		posts = _.sortBy(req.competitionEntry?.blogPosts, 'date').reverse()
 		res.render 'blog',
 			title: "SantaHack #{req.year} Blog"
-			blogPosts: _.sortBy(req.competitionEntry?.blogPosts, 'date').reverse().slice(firstPost, firstPost + 5)
-			pageCount: Math.ceil req.competitionEntry?.blogPosts?.length / 5
+			blogPosts: posts.slice(firstPost, firstPost + 5)
+			pageCount: Math.ceil posts.length / 5
 
 app.get /^\/(?:\d{4}\/)?blog.json$/, (req, res) ->
 	if not req.needsYearRedirect()
@@ -489,11 +490,12 @@ app.get /^\/(?:\d{4}\/)?blog\/user\/([\w\-]+)(?:\/(\d+))?$/, (req, res, next) ->
 			.par('userData', () -> data.getUserData id, this)
 			.seq(() ->
 				firstPost = (if page? then parseInt(page) * 5 else 0)
+				posts = _.sortBy(@vars.entry?.blogPosts, 'date').reverse()
 				res.render 'blog',
 					title: "SantaHack #{req.year} Blog: #{@vars.userData.name}"
 					userName: @vars.userData.name
-					blogPosts: _.sortBy(@vars.entry?.blogPosts, 'date').reverse().slice(firstPost, firstPost + 5)
-					pageCount: Math.ceil @vars.entry?.blogPosts?.length / 5
+					blogPosts: posts.slice(firstPost, firstPost + 5)
+					pageCount: Math.ceil posts.length / 5
 			).catch next
 	else
 		res.redirect res.locals.genLink '/'
