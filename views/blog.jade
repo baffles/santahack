@@ -94,7 +94,7 @@ block content
 					.pagination
 						ul
 							- for(var page = 0; page < pageCount; page++)
-								li: a(href=genLink("/blog/#{page}"), data-page=page)= page + 1
+								li: a(href=genLink("#{blogBase}/#{page}"), data-page=page)= page + 1
 			
 			if typeof previewPost !== 'undefined' && previewPost != null
 				h2 Preview

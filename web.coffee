@@ -442,6 +442,7 @@ app.get /^\/(?:\d{4}\/)?blog(?:\/(\d+))?$/, (req, res, next) ->
 		posts = _.sortBy(req.competitionEntry?.blogPosts, 'date').reverse()
 		res.render 'blog',
 			title: "SantaHack #{req.year} Blog"
+			blogBase: '/blog'
 			blogPosts: posts.slice(firstPost, firstPost + 5)
 			pageCount: Math.ceil posts.length / 5
 
@@ -464,6 +465,7 @@ app.get /^\/(?:\d{4}\/)?blog\/edit\/([\w\-]+)$/, (req, res, next) ->
 	if post? and lib.data.competitionStates.Development.seq <= req.competition.getState().seq <= lib.data.competitionStates.DevelopmentGrace.seq
 		res.render 'blog',
 			title: "SantaHack #{req.year} Blog"
+			blogBase: '/blog'
 			editPost: post
 			previewPost: post
 			lastScreenshots: JSON.stringify post.screenshots
@@ -476,6 +478,7 @@ app.get /^\/(?:\d{4}\/)?blog\/delete\/([\w\-]+)$/, (req, res, next) ->
 	if post?
 		res.render 'blog-delete',
 			title: "SantaHack #{req.year} Delete Blog Post"
+			blogBase: '/blog'
 			post: post
 	else
 		res.redirect res.locals.genLink '/blog'
@@ -490,10 +493,9 @@ app.get /^\/(?:\d{4}\/)?blog\/user\/([\w\-]+)(?:\/(\d+))?$/, (req, res, next) ->
 			.seq(() ->
 				firstPost = (if page? then parseInt(page) * 5 else 0)
 				posts = _.sortBy(@vars.entry?.blogPosts, 'date').reverse()
-				console.log posts, firstPost, page
-				console.log posts.slice firstPost, firstPost + 5
 				res.render 'blog',
 					title: "SantaHack #{req.year} Blog: #{@vars.userData.name}"
+					blogBase: "/blog/user/#{id}"
 					userName: @vars.userData.name
 					blogPosts: posts.slice firstPost, firstPost + 5
 					pageCount: Math.ceil posts.length / 5
@@ -508,6 +510,7 @@ app.get /^\/(?:\d{4}\/)?blog\/post\/([\w\-]+)(?:\/(\d+))?$/, (req, res, next) ->
 		.seq((post) ->
 			res.render 'blog',
 				title: "SantaHack #{req.year} Blog Post"
+				blogBase: '/blog'
 				blogPosts: [ post ]
 				pageCount: 0
 		).catch next
@@ -631,6 +634,7 @@ app.post /^\/(?:\d{4}\/)?blog$/, (req, res, next) ->
 							# show edit page for post; if post itself was valid then we save it
 							res.render 'blog',
 								title: "SantaHack #{req.year} Blog"
+								blogBase: '/blog'
 								editPost: blogPost
 								previewPost: blogPost
 								lastScreenshots: if not validPost or previewOnly then JSON.stringify(blogPost.screenshots) else null
