@@ -483,7 +483,6 @@ app.get /^\/(?:\d{4}\/)?blog\/delete\/([\w\-]+)$/, (req, res, next) ->
 app.get /^\/(?:\d{4}\/)?blog\/user\/([\w\-]+)(?:\/(\d+))?$/, (req, res, next) ->
 	id = req.params[0]
 	page = req.params[1]
-	
 	if req.user?.id is id or req.competition.getState() is lib.data.competitionStates.ReleasePublic or (req.competition.getState() is lib.data.competitionStates.ReleasePrivate and (req.competitionEntry?.gift?.user is id or req.competitionEntry?.gift?.original is id))
 		lib.seq()
 			.par('entry', () -> data.getUserCompetitionEntry { id }, req.competition, this)
@@ -491,10 +490,12 @@ app.get /^\/(?:\d{4}\/)?blog\/user\/([\w\-]+)(?:\/(\d+))?$/, (req, res, next) ->
 			.seq(() ->
 				firstPost = (if page? then parseInt(page) * 5 else 0)
 				posts = _.sortBy(@vars.entry?.blogPosts, 'date').reverse()
+				console.log posts, firstPost, page
+				console.log posts.slice firstPost, firstPost + 5
 				res.render 'blog',
 					title: "SantaHack #{req.year} Blog: #{@vars.userData.name}"
 					userName: @vars.userData.name
-					blogPosts: posts.slice(firstPost, firstPost + 5)
+					blogPosts: posts.slice firstPost, firstPost + 5
 					pageCount: Math.ceil posts.length / 5
 			).catch next
 	else
