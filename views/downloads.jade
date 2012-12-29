@@ -35,7 +35,7 @@ block content
 								a(href=getS3Url(entry.submission.sourcePack.path))= entry.submission.sourcePack.name
 								|  (#{displayBytes(entry.submission.sourcePack.size)})
 						if entry.submission.binaryPack != null
-							.existing-file Binary:
+							.existing-file Binary: 
 								a(href=getS3Url(entry.submission.binaryPack.path))= entry.submission.binaryPack.name
 								|  (#{displayBytes(entry.submission.binaryPack.size)})
 						!= markdown(entry.submission.description)
