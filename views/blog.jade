@@ -26,10 +26,8 @@ mixin blogPost(post)
 		span!= markdown(post.content)
 
 block content
-	- var ownBlog = true
 	if typeof userName !== 'undefined' && userName != null
 		h2 #{userName}'s Blog
-		- ownBlog = false
 	else
 		h2 Blog
 	- var compState = competition.getState()

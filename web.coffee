@@ -442,6 +442,7 @@ app.get /^\/(?:\d{4}\/)?blog(?:\/(\d+))?$/, (req, res, next) ->
 		posts = _.sortBy(req.competitionEntry?.blogPosts, 'date').reverse()
 		res.render 'blog',
 			title: "SantaHack #{req.year} Blog"
+			ownBlog: true
 			blogBase: '/blog'
 			blogPosts: posts.slice(firstPost, firstPost + 5)
 			pageCount: Math.ceil posts.length / 5
@@ -465,6 +466,7 @@ app.get /^\/(?:\d{4}\/)?blog\/edit\/([\w\-]+)$/, (req, res, next) ->
 	if post? and lib.data.competitionStates.Development.seq <= req.competition.getState().seq <= lib.data.competitionStates.DevelopmentGrace.seq
 		res.render 'blog',
 			title: "SantaHack #{req.year} Blog"
+			ownBlog: true
 			blogBase: '/blog'
 			editPost: post
 			previewPost: post
@@ -495,6 +497,7 @@ app.get /^\/(?:\d{4}\/)?blog\/user\/([\w\-]+)(?:\/(\d+))?$/, (req, res, next) ->
 				posts = _.sortBy(@vars.entry?.blogPosts, 'date').reverse()
 				res.render 'blog',
 					title: "SantaHack #{req.year} Blog: #{@vars.userData.name}"
+					ownBlog: false
 					blogBase: "/blog/user/#{id}"
 					userName: @vars.userData.name
 					blogPosts: posts.slice firstPost, firstPost + 5
@@ -510,6 +513,7 @@ app.get /^\/(?:\d{4}\/)?blog\/post\/([\w\-]+)(?:\/(\d+))?$/, (req, res, next) ->
 		.seq((post) ->
 			res.render 'blog',
 				title: "SantaHack #{req.year} Blog Post"
+				ownBlog: false
 				blogBase: '/blog'
 				blogPosts: [ post ]
 				pageCount: 0
@@ -634,6 +638,7 @@ app.post /^\/(?:\d{4}\/)?blog$/, (req, res, next) ->
 							# show edit page for post; if post itself was valid then we save it
 							res.render 'blog',
 								title: "SantaHack #{req.year} Blog"
+								ownBlog: true
 								blogBase: '/blog'
 								editPost: blogPost
 								previewPost: blogPost
