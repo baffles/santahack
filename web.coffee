@@ -825,7 +825,27 @@ app.get /^\/(?:\d{4}\/)?gift$/, (req, res, next) ->
 			).catch next
 
 # /downloads
-# TODO: /downloads page
+app.get /^\/(?:\d{4}\/)?downloads$/, (req, res, next) ->
+	if not req.needsYearRedirect()
+		lib.seq()
+			.seq(() -> data.getCompleteSubmissions req.competition.year, this)
+			.flatten()
+			.parMap((submission) -> data.getUserData submission.user, (err, user) =>
+				submission.user = user
+				this err, submission
+			).parMap((submission) -> data.getUserData submission.assignment, (err, assn) =>
+				submission.assignment = assn
+				this err, submission
+			).seqMap((submission) -> data.getUserWishlist submission.assignment.id, req.competition.year, (err, wishlist) =>
+				submission.wishlist = wishlist
+				this err, submission
+			).unflatten()
+			.seq((entries) ->
+				console.log entries
+				res.render 'downloads',
+					title: "SantaHack #{req.year} Downloads"
+					entries: entries
+			).catch next
 
 # admin functions
 # TODO: should do better w/ check errors from DB on updates/saves on admin pages

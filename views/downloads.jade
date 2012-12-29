@@ -1,0 +1,50 @@
+extends layout
+
+block additionalCSS
+	link(rel='stylesheet', href='/static/lib/lightbox/css/lightbox.css', media='screen')
+	link(rel='stylesheet', href='/static/css/downloads.css', media='screen')
+
+block scripts
+	script(type='text/javascript', src='/static/lib/lightbox/jquery.lightbox.js')
+	script(type='text/javascript', src='/static/js/downloads.min.js')
+
+block content
+	h2 Downloads
+	- var compState = competition.getState()
+	if compState.seq >= competitionStates.ReleasePublic.seq
+		if entries.length > 0
+			#downloads
+				for entry in entries
+					.download
+						h3= entry.submission.name
+						p By #{entry.user.name} for #{entry.assignment.name}
+							if entry.submission.website.length > 0
+								|  [
+								a(href=entry.submission.website) Website
+								| ]
+							if entry.blogPosts != null && entry.blogPosts.length > 0
+								|  [
+								a(href=genLink("/blog/user/#{entry.user.id}")) Blog
+								| ]
+						if entry.submission.screenshots != null && entry.submission.screenshots.length > 0
+							ul.thumbnails
+								for image in entry.submission.screenshots
+									li.span3: a.lightbox(href=getS3Url(image.fullsize), title=image.name, rel="lightbox"): img(src=getS3Url(image.thumbnail))
+						if entry.submission.sourcePack != null
+							.existing-file Source: 
+								a(href=getS3Url(entry.submission.sourcePack.path))= entry.submission.sourcePack.name
+								|  (#{displayBytes(entry.submission.sourcePack.size)})
+						if entry.submission.binaryPack != null
+							.existing-file Binary:
+								a(href=getS3Url(entry.submission.binaryPack.path))= entry.submission.binaryPack.name
+								|  (#{displayBytes(entry.submission.binaryPack.size)})
+						!= markdown(entry.submission.description)
+						p The game implements the following ideas:
+							ul
+								for wish, idx in entry.wishlist.wishes
+									if entry.submission.implementsWish[idx]
+										li: strong= wish
+		else
+			p No submissions found for SantaHack #{year}.
+	else
+		p Downloads for SantaHack #{year} have not been released yet.
