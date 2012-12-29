@@ -26,23 +26,25 @@ mixin blogPost(post)
 		span!= markdown(post.content)
 
 block content
+	- var ownBlog = true
 	if typeof userName !== 'undefined' && userName != null
 		h2 #{userName}'s Blog
+		- ownBlog = false
 	else
 		h2 Blog
 	- var compState = competition.getState()
 	- var editing = typeof editPost !== 'undefined' && editPost != null
 	- var data = editing ? editPost : {}
 	- var errors = (typeof errors !== 'undefined' && errors != null) ? errors : {}
-	if session.user == null
+	if ownBlog && session.user == null
 		p Please 
 			a(href='/login?return=' + returnURL) login
 			|  to view and edit your blog.
 	else if compState.seq >= competitionStates.Development.seq
-		if typeof competitionEntry === 'undefined' || competitionEntry == null || !competitionEntry.isEligible
+		if ownBlog && (typeof competitionEntry === 'undefined' || competitionEntry == null || !competitionEntry.isEligible)
 			p You did not join and fulfill all the requirements for SantaHack #{year}. Better luck next year!
 		else
-			if compState.seq < competitionStates.DevelopmentIntermission.seq
+			if ownBlog && compState.seq < competitionStates.DevelopmentIntermission.seq
 				.well
 					h3(style='margin-top: 0') New Post
 					div
