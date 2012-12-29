@@ -29,7 +29,7 @@ block content
 						if entry.submission.screenshots != null && entry.submission.screenshots.length > 0
 							ul.thumbnails
 								for image in entry.submission.screenshots
-									li.span3: a.lightbox(href=getS3Url(image.fullsize), title=image.name, rel="lightbox"): img(src=getS3Url(image.thumbnail))
+									li.span3: a.lightbox(href=getS3Url(image.fullsize), title=image.name, rel="lightbox[#{entry.user.name} #{entry.submission.name}]"): img(src=getS3Url(image.thumbnail))
 						if entry.submission.sourcePack != null
 							.existing-file Source: 
 								a(href=getS3Url(entry.submission.sourcePack.path))= entry.submission.sourcePack.name
