@@ -806,7 +806,7 @@ app.post /^\/(?:\d{4}\/)?submit$/, (req, res, next) ->
 app.get /^\/(?:\d{4}\/)?gift$/, (req, res, next) ->
 	if not req.needsYearRedirect()
 		lib.seq()
-			.par('gift', () -> req.competitionEntry?.getGift this)
+			.par('gift', () -> if req.competitionEntry? then req.competitionEntry.getGift this else this null, null)
 			.par('secretSanta', () -> if req.competitionEntry?.gift?.user? then data.getUserData req.competitionEntry.gift.user, this else this null, null)
 			.par('originalSanta', () -> if req.competitionEntry?.gift?.original? then data.getUserData req.competitionEntry.gift.original, this else this null, null)
 			.par('giftWishlist', () -> if req.competitionEntry?.gift?.user? then data.getUserWishlist req.competitionEntry?.gift?.user, req.year, this else this null, null)

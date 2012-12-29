@@ -13,7 +13,7 @@ block content
 	if session.user == null
 		p Please 
 			a(href='/login?return=' + returnURL) login
-			|  to vote.
+			|  to see your gift.
 	else if compState.seq >= competitionStates.ReleasePrivate.seq
 		if competitionEntry == null || !competitionEntry.isEligible
 			p You did not join and fulfill all the requirements for SantaHack #{year}. Better luck next year!
