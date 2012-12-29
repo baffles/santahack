@@ -846,7 +846,6 @@ app.get /^\/(?:\d{4}\/)?downloads$/, (req, res, next) ->
 				this err, submission
 			).unflatten()
 			.seq((entries) ->
-				console.log entries
 				res.render 'downloads',
 					title: "SantaHack #{req.year} Downloads"
 					entries: entries
