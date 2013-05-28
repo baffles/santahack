@@ -12,10 +12,10 @@ lib =
 	gm: require 'gm'
 	fs: require 'fs'
 	path: require 'path'
-	accSso: require './acc-sso'
-	data: require './data'
-	pairings: require './pairings'
-	voteID: require './vote-id'
+	accSso: require './lib/acc-sso'
+	data: require './lib/data'
+	pairings: require './lib/pairings'
+	voteID: require './lib/vote-id'
 
 _ = lib.underscore._
 
