@@ -1,6 +1,6 @@
 crypto = require 'crypto'
 
-module.exports = class VoteIDGeneration
+module.exports = class VoteID
 	constructor: (@cipher, @key) ->
 	
 	toID: (voteItem) ->

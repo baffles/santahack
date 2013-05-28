@@ -12,10 +12,12 @@ lib =
 	gm: require 'gm'
 	fs: require 'fs'
 	path: require 'path'
-	accSso: require './lib/acc-sso'
 	data: require './lib/data'
 	pairings: require './lib/pairings'
 	voteID: require './lib/vote-id'
+
+# make sure iced coffeescript gets loaded, so it can handle .iced files
+require 'iced-coffee-script'
 
 _ = lib.underscore._
 
@@ -29,7 +31,6 @@ s3 = lib.knox.createClient
 
 imageMagick = lib.gm.subClass { imageMagick: true }
 
-accSso = new lib.accSso
 data = new lib.data db
 voteID = new lib.voteID 'aes256', 'santas shack hack'
 
@@ -38,66 +39,9 @@ app = lib.express()
 app.set 'views', "#{__dirname}/views"
 app.set 'view engine', 'jade'
 
-(require './middleware') app, data
-
-lib.marked.setOptions
-	gfm: true
-	pedantic: false
-	sanitize: true
-app.locals.markdown = lib.marked
-
-app.locals.friendlyDate = (date) -> lib.moment(date).fromNow()
-app.locals.displayDate = (date) -> lib.moment(date).utc().calendar()
-app.locals.utcDate = (date) -> lib.moment(date).utc().format 'dddd, MMMM Do YYYY, h:mm:ss a [UTC]'
-app.locals.getDisplayTime = () -> lib.moment().utc().format 'MMM D[,] YYYY, h:mm A [UTC]'
-app.locals.getGenerationTime = (requestTime) -> lib.moment().diff(lib.moment(requestTime), 'seconds', true)
-
-s3Content = process.env.AWS_CONTENT
-app.locals.getS3Url = (filename) => "http://#{s3Content}/#{filename}"
-
-app.locals.displayBytes = (bytes) ->
-	units = [ 'B', 'KB', 'MB' ]
-	unit = 0
-	val = bytes
-	while val > 1024
-		unit++
-		val /= 1024
-	"#{Math.round(val * 100) / 100} #{units[unit]}"
-
-# /
-app.get /^\/(\d{4})?\/?$/, (req, res) ->
-	if req.params[0]?
-		res.redirect "/#{req.params[0]}/home"
-	else
-		res.redirect '/home'
-
-app.get '/login', (req, res) ->
-	returnUrl = req.query.return
-	accReturn = process.env.ACCRETURN ? "http://#{req.host}/login-return"
-	accReturn += "$return=#{returnUrl}" if returnUrl?
-	res.redirect accSso.getLoginUrl accReturn
-
-app.get '/logout', (req, res) ->
-	req.session.user = null
-	res.redirect (req.query.return) ? '/'
-
-app.get '/login-return', (req, res, next) ->
-	req.session.user = null
-	
-	lib.seq()
-		.seq('accUser', () -> accSso.processAuthenticationToken req.query.token, this)
-		.forEach(() -> data.updateUserData @vars.accUser)
-		.seq('userData', () -> data.getUserData @vars.accUser.id, this)
-		.seq(() ->
-			# generate user information for cookie; any data from acc overrides whatever was in DB (update may not have happened yet)
-			userData = @vars.userData
-			for k, v of @vars.accUser
-				userData[k] = v
-			
-			delete userData._id # no need to store the db ID in the session
-			req.session.user = userData
-			res.redirect req.query.return ? '/'
-		).catch((err) -> next err)
+(require './middleware').register app, data
+(require './lib/app-locals').register app
+(require './router').register app, data
 
 app.get '/admin', (req, res) ->
 	if not req.session?.user?.isAdmin
@@ -131,32 +75,6 @@ app.get '/info.json', (req, res, next) ->
 						'release-gifts': (@vars.competition.privateRelease.valueOf() - now) / 1000 | 0
 						'release-public': (@vars.competition.publicRelease.valueOf() - now) / 1000 | 0
 		).catch((err) -> next err)
-
-# /home
-app.get /^\/(?:\d{4}\/)?home(?:\/(\d+))?$/, (req, res, next) ->
-	if not req.needsYearRedirect()
-		page = req.params[0]
-		lib.seq()
-			.par('news', () -> data.getNews req.year, 5, (if page? then parseInt(page) * 5 else 0), this)
-			.par('count', () -> data.getNewsCount req.year, this)
-			.seq(() ->
-				res.render 'home',
-					title: "SantaHack #{req.year}"
-					posts: @vars.news
-					pageCount: Math.ceil @vars.count / 5
-			).catch((err) -> next err)
-
-app.get /^\/(?:\d{4}\/)?news.json$/, (req, res) ->
-	if not req.needsYearRedirect()
-		lib.seq()
-			.seq(() -> data.getNews req.year, 5, (if req.query.page? then parseInt(req.query.page) * 5 else 0), this)
-			.seq((news) ->
-				for post in news
-					post.utcDate = app.locals.utcDate post.date
-					post.friendlyDate = app.locals.friendlyDate post.date
-					post.html = app.locals.markdown post.content
-				res.json news
-			).catch((err) -> res.json 500, {})
 
 # /rules
 app.get /^\/(?:\d{4}\/)?rules$/, (req, res) ->
